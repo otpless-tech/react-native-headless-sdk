@@ -3,6 +3,7 @@ import OtplessBM
 
 @objc(OtplessHeadlessRN)
 class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
+  private var currentTask: Task<Void, Never>?
   
   func onResponse(_ response: OtplessBM.OtplessResponse) {
     onOtplessResponse(response: response)
@@ -116,16 +117,29 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   
   @objc(start:)
   func start(request: [String: Any]) {
-    let otplessRequest = createOtplessRequest(args: request)
-    Task(priority: .userInitiated) {
-      await Otpless.shared.start(withRequest: otplessRequest)
-    }
+      let otplessRequest = createOtplessRequest(args: request)
+
+      let isOtpVerification = (request["otp"] as? String)?.isEmpty == false
+
+      if !isOtpVerification {
+          // Cancel the existing task if it's not an OTP verification request
+          currentTask?.cancel()
+      }
+
+      let newTask = Task(priority: .userInitiated) {
+          await Otpless.shared.start(withRequest: otplessRequest)
+      }
+
+      if !isOtpVerification {
+          currentTask = newTask
+      }
   }
-  
   
   @objc(cleanup)
   func cleanup() {
     Otpless.shared.cleanup()
+    currentTask?.cancel()
+    currentTask = nil
   }
   
   @MainActor @available(iOS 13.0, *)

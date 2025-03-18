@@ -25,7 +25,7 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("H7A18MQGF2DLZY7PIJRQ")
+        headlessModule.initialize("OD6F3SJGCP93605DA5OM")
         headlessModule.setResponseCallback(onHeadlessResult);
 
         return () => {
