@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard, Keyboard, Platform, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
 import { OtplessHeadlessModule } from 'otpless-headless-rn';
 
 interface Identity {
@@ -89,14 +89,7 @@ export default function HeadlessPage() {
     };
 
     const copyToClipboard = () => {
-        // if (result.length === 0) {
-            headlessModule.showPhoneHint((result: any) => { 
-                Alert.alert("Phone Hint", JSON.stringify(result));
-            });
-            return;
-        // }
-        // Clipboard.setString(result);
-        // alert("Result copied to clipboard!");
+        Clipboard.setString(result);
     };
 
     const performOneTap = (identity: Identity) => {
