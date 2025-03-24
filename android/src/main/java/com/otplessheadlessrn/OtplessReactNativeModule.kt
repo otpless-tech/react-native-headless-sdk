@@ -13,21 +13,24 @@ import com.otpless.v2.android.sdk.dto.OtplessChannelType
 import com.otpless.v2.android.sdk.dto.OtplessRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.ResponseTypes
-import com.otpless.v2.android.sdk.main.OtplessPhoneHint
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 
 class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
+  private var otplessJob: Job? = null
+
   init {
     OtplessHeadlessRNManager.registerOtplessModule(this)
     reactContext.addActivityEventListener(this)
   }
-
-  private val phoneHintApi by lazy { OtplessPhoneHint() }
 
   override fun getName(): String {
     return NAME
@@ -79,12 +82,15 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   fun start(data: ReadableMap) {
     val otplessRequest = OtplessRequest()
     val phone = data.getString("phone") ?: ""
+    var isOtpPresent = false
+
     // phone number authentication
     if (phone.isNotEmpty()) {
       val countryCode = data.getString("countryCode") ?: ""
       otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
       data.getString("otp")?.let {
         otplessRequest.setOtp(it)
+        isOtpPresent = true
       }
     } else {
       // email authentication
@@ -93,10 +99,15 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         otplessRequest.setEmail(email)
         data.getString("otp")?.let {
           otplessRequest.setOtp(it)
+          isOtpPresent = true
         }
       } else {
         // oauth case
-        otplessRequest.setChannelType(OtplessChannelType.fromString(data.getString("channelType") ?: ""))
+        otplessRequest.setChannelType(
+          OtplessChannelType.fromString(
+            data.getString("channelType") ?: ""
+          )
+        )
       }
     }
     data.getString("expiry")?.takeIf { it.isNotBlank() }?.let {
@@ -115,7 +126,14 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
       otplessRequest.setTemplateId(templateId)
     }
 
-    OtplessSDK.startAsync(request = otplessRequest, this::sendHeadlessEventCallback)
+    if (isOtpPresent) {
+        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+    } else {
+      otplessJob?.cancel()
+      otplessJob = CoroutineScope(Dispatchers.IO).launch {
+        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
+    }
   }
 
   @ReactMethod
@@ -125,6 +143,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun cleanup() {
+    otplessJob?.cancel()
     OtplessSDK.cleanup()
   }
 
@@ -151,14 +170,19 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     val dataMap = data?.toHashMap() ?: return
     val jsonResponse = JSONObject(dataMap)
     val otplessResponse = OtplessResponse(
-      responseType = getResponseType(responseTypeString = jsonResponse.optString("responseType", "")),
+      responseType = getResponseType(
+        responseTypeString = jsonResponse.optString(
+          "responseType",
+          ""
+        )
+      ),
       jsonResponse.optJSONObject("response"),
       jsonResponse.optInt("statusCode", 0),
     )
     OtplessSDK.commit(otplessResponse)
   }
 
-  private fun getResponseType(responseTypeString: String) : ResponseTypes {
+  private fun getResponseType(responseTypeString: String): ResponseTypes {
     return ResponseTypes.valueOf(responseTypeString)
   }
 }

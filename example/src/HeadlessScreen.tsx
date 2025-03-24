@@ -92,6 +92,12 @@ export default function HeadlessPage() {
         Clipboard.setString(result);
     };
 
+    const cleanupAndReinitialize = () => {
+        headlessModule.cleanup();
+        headlessModule.initialize("OD6F3SJGCP93605DA5OM");
+        headlessModule.setResponseCallback(onHeadlessResult);
+    };
+
     const performOneTap = (identity: Identity) => {
         console.log("Performing OneTap with:", identity);
         // Call Otpless OneTap function here
@@ -186,6 +192,10 @@ export default function HeadlessPage() {
 
             <TouchableOpacity style={styles.primaryButton} onPress={copyToClipboard}>
                 <Text style={styles.buttonText}>Copy Result</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={cleanupAndReinitialize}>
+                <Text style={styles.buttonText}>Cleanup & Re initialize</Text>
             </TouchableOpacity>
 
             <Text style={styles.resultText}>{result}</Text>
