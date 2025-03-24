@@ -159,7 +159,6 @@
     ]
   },
   "dependencies": {
-    "react-native-debug": "^3.0.0",
     "ts-lint": "^4.5.1"
   }
 }

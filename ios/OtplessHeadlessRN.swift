@@ -89,7 +89,6 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     return ["OTPlessEventResult"]
   }
   
-  @MainActor
   @objc(initialize:loginUri:)
   func initialize(appId: String, loginUri: String?) {
     DispatchQueue.main.async {
@@ -168,14 +167,6 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       return nil
     }
     return windowScene
-  }
-  
-  @objc(performOneTap:)
-  func performOneTap(request: [String: Any]) {
-    let oneTapIdentity = OneTapIdentity(name: request["name"] as? String, identity: request["identity"] as? String ?? "", uiId: request["uiId"] as? String ?? "", logo: request["logo"] as? String)
-    Task(priority: .userInitiated) {
-      await Otpless.shared.performOneTap(forIdentity: oneTapIdentity)
-    }
   }
 }
 

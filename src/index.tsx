@@ -42,7 +42,7 @@ class OtplessHeadlessModule {
   }
 
   setResponseCallback(callback: OtplessResultCallback) {
-    this.eventEmitter!!.addListener('OTPlessEventResult', callback);
+    this.eventEmitter?.addListener('OTPlessEventResult', callback);
     // call the native method
     OtplessHeadlessRN.setResponseCallback()
   }
@@ -55,10 +55,6 @@ class OtplessHeadlessModule {
     OtplessHeadlessRN.commitResponse(response);
   }
 
-  performOneTap(data: any) {
-    OtplessHeadlessRN.performOneTap(data);
-  }
-
   // Checks if whatsapp is installed on android device
   isWhatsappInstalled(callback: (hasWhatsapp: boolean) => void) {
     if (Platform.OS === 'android') {
@@ -68,6 +64,10 @@ class OtplessHeadlessModule {
       });
       return
     }
+  }
+
+  cleanup() {
+    OtplessHeadlessRN.cleanup();
   }
 }
 
