@@ -2,6 +2,8 @@ package com.otplessheadlessrn
 
 import android.app.Activity
 import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.Callback
 import com.facebook.react.bridge.ReactApplicationContext
@@ -130,8 +132,12 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
     } else {
       otplessJob?.cancel()
-      otplessJob = CoroutineScope(Dispatchers.IO).launch {
-        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      currentActivity?.let {
+        otplessJob = (it as AppCompatActivity).lifecycleScope.launch {
+          OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+        }
+      } ?: run {
+        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
       }
     }
   }
