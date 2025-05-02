@@ -69,6 +69,12 @@ class OtplessHeadlessModule {
   cleanup() {
     OtplessHeadlessRN.cleanup();
   }
+
+  decimateAll() {
+    if (Platform.OS.toLowerCase() === 'ios') {
+      OtplessHeadlessRN.decimateAll();
+    }
+  }
 }
 
 export { OtplessHeadlessModule };
