@@ -140,6 +140,11 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     currentTask?.cancel()
     currentTask = nil
   }
+
+  @objc(decimateAll)
+  func decimateAll() {
+    Otpless.shared.clearAll()
+  }
   
   @MainActor @available(iOS 13.0, *)
   private func getRootViewControllerFromWindowScene() -> UIViewController? {

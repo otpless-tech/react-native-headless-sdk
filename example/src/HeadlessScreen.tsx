@@ -2,13 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
 import { OtplessHeadlessModule } from 'otpless-headless-rn';
 
-interface Identity {
-    name: string;
-    identity: string;
-    uiId: string;
-    logo: string;
-  }
-
 export default function HeadlessPage() {
     const headlessModule = new OtplessHeadlessModule();
     const [result, setResult] = useState('');
@@ -96,12 +89,7 @@ export default function HeadlessPage() {
         headlessModule.cleanup();
         headlessModule.initialize("OD6F3SJGCP93605DA5OM");
         headlessModule.setResponseCallback(onHeadlessResult);
-    };
-
-    const performOneTap = (identity: Identity) => {
-        console.log("Performing OneTap with:", identity);
-        // Call Otpless OneTap function here
-      };
+    }
 
     return (
         <ScrollView >
