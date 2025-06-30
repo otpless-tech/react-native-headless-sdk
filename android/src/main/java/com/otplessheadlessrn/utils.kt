@@ -1,5 +1,6 @@
 package com.otplessheadlessrn
 
+import android.graphics.Color
 import android.util.Log
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
@@ -165,17 +166,19 @@ internal fun parseTrueCallerRequest(requestMap: ReadableMap): OtplessTruecallerR
     }
   }
   // parsing button color and button color text
-  val buttonColor: Int? = trueCallerRequestMap.getInt("buttonColor").let { value ->
-    if (value == 0) null else value
-  }
-  val buttonTextColor: Int? = trueCallerRequestMap.getInt("buttonTextColor").let { value ->
-    if (value == 0) null else value
-  }
+  val buttonColor: Int? = trueCallerRequestMap.getString("buttonColor")?.let { hex -> fromHexStringToInt(hex) }
+  val buttonTextColor: Int? = trueCallerRequestMap.getString("buttonTextColor")?.let { hex -> fromHexStringToInt(hex) }
   // add the parsing logic for request map
   return OtplessTruecallerRequest(
     footerType = footerType, shape = shape, verifyOption = verifyOption, heading = heading,
     loginPrefixText = loginPrefixText, ctaText = ctaText, locale = locale, buttonColor = buttonColor, buttonTextColor = buttonTextColor
   )
+}
+
+internal fun fromHexStringToInt(hex: String): Int? = try {
+  Color.parseColor(hex)
+} catch (ex: Exception) {
+  null
 }
 
 internal fun parseTrueCallerScope(requestMap: ReadableMap): List<OTScope> {
