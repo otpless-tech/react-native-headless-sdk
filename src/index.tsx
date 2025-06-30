@@ -1,4 +1,6 @@
 import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
+import type { OtplessTruecallerRequest } from './models';
+
 
 
 const LINKING_ERROR =
@@ -56,13 +58,12 @@ class OtplessHeadlessModule {
   }
 
   // Checks if whatsapp is installed on android device
-  isWhatsappInstalled(callback: (hasWhatsapp: boolean) => void) {
+  async isWhatsappInstalledForAndroid(): Promise<boolean> {
     if (Platform.OS === 'android') {
-      OtplessHeadlessRN.isWhatsappInstalled((result: any) => {
-        const hasWhatsapp = result.hasWhatsapp === true;
-        callback(hasWhatsapp);
-      });
-      return
+      // Android-specific code
+      return await OtplessHeadlessRN.isWhatsappInstalled()
+    } else {
+      return false
     }
   }
 
@@ -75,6 +76,20 @@ class OtplessHeadlessModule {
       OtplessHeadlessRN.decimateAll();
     }
   }
+
+  setDevLogging(enable: boolean) {
+    OtplessHeadlessRN.setDevLogging(enable)
+  }
+
+  async initTrueCaller(requestMap: OtplessTruecallerRequest): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      return await OtplessHeadlessRN.initTrueCaller(requestMap);
+    }
+    return false;
+  }
+  
 }
 
+
 export { OtplessHeadlessModule };
+export * from './models'
