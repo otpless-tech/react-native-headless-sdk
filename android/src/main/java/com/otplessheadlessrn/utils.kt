@@ -1,5 +1,7 @@
 package com.otplessheadlessrn
 
+import android.graphics.Color
+import android.util.Log
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
@@ -7,9 +9,18 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeArray
 import com.facebook.react.bridge.WritableNativeMap
+import com.otpless.longclaw.tc.OTButtonShape
+import com.otpless.longclaw.tc.OTCtaText
+import com.otpless.longclaw.tc.OTFooterType
+import com.otpless.longclaw.tc.OTHeadingConsent
+import com.otpless.longclaw.tc.OTLoginPrefixText
+import com.otpless.longclaw.tc.OTScope
+import com.otpless.longclaw.tc.OTVerifyOption
+import com.otpless.longclaw.tc.OtplessTruecallerRequest
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.Locale
 
 
 internal fun convertMapToJson(map: ReadableMap?): JSONObject? {
@@ -118,4 +129,78 @@ internal fun convertJsonToArray(jsonArray: JSONArray): WritableArray {
     }
   }
   return array
+}
+
+internal fun parseTrueCallerRequest(requestMap: ReadableMap): OtplessTruecallerRequest {
+  val trueCallerRequestMap = requestMap.getMap("trueCallerRequest") ?: return OtplessTruecallerRequest()
+  // parsing footer type
+  val footerType: OTFooterType? = trueCallerRequestMap.getString("footerType")?.let { str ->
+    OTFooterType.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing button shape
+  val shape: OTButtonShape? = trueCallerRequestMap.getString("shape")?.let { str ->
+    OTButtonShape.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing verify option
+  val verifyOption: OTVerifyOption? = trueCallerRequestMap.getString("verifyOption")?.let { str ->
+    OTVerifyOption.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing heading option
+  val heading: OTHeadingConsent? = trueCallerRequestMap.getString("heading")?.let { str ->
+    OTHeadingConsent.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing login prefix text
+  val loginPrefixText: OTLoginPrefixText? = trueCallerRequestMap.getString("loginPrefixText")?.let { str ->
+    OTLoginPrefixText.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing cta text
+  val ctaText: OTCtaText? = trueCallerRequestMap.getString("ctaText")?.let { str ->
+    OTCtaText.values().firstOrNull { it.name.equals(str, ignoreCase = true) }
+  }
+  // parsing locale
+  val locale: Locale? = trueCallerRequestMap.getString("locale")?.let { str ->
+    try {
+      Locale.forLanguageTag(str)
+    } catch (ignore: Exception) {
+      null
+    }
+  }
+  // parsing button color and button color text
+  val buttonColor: Int? = trueCallerRequestMap.getString("buttonColor")?.let { hex -> fromHexStringToInt(hex) }
+  val buttonTextColor: Int? = trueCallerRequestMap.getString("buttonTextColor")?.let { hex -> fromHexStringToInt(hex) }
+  // add the parsing logic for request map
+  return OtplessTruecallerRequest(
+    footerType = footerType, shape = shape, verifyOption = verifyOption, heading = heading,
+    loginPrefixText = loginPrefixText, ctaText = ctaText, locale = locale, buttonColor = buttonColor, buttonTextColor = buttonTextColor
+  )
+}
+
+internal fun fromHexStringToInt(hex: String): Int? = try {
+  Color.parseColor(hex)
+} catch (ex: Exception) {
+  null
+}
+
+internal fun parseTrueCallerScope(requestMap: ReadableMap): List<OTScope> {
+  val scopeArray = requestMap.getArray("scope")
+  if (scopeArray != null && scopeArray.size() != 0) {
+    val scopes = mutableListOf<OTScope>()
+    for (index in 0 until scopeArray.size()) {
+      val value = scopeArray.getString(index)
+      val scopeType = OTScope.values().firstOrNull { it.name.equals(value, ignoreCase = true)} ?: continue
+      scopes.add(scopeType)
+    }
+    return scopes
+  } else {
+    return listOf(OTScope.OPEN_ID, OTScope.PHONE, OTScope.PROFILE)
+  }
+}
+
+
+private const val LOGTAG = "OtplessHeadlessRN"
+
+internal fun debugLog(message: String) {
+  if (BuildConfig.DEBUG) {
+    Log.d(LOGTAG, message)
+  }
 }

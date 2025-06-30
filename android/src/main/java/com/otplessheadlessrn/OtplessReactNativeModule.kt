@@ -3,14 +3,16 @@ package com.otplessheadlessrn
 import android.app.Activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.facebook.react.bridge.ActivityEventListener
-import com.facebook.react.bridge.Callback
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.otpless.longclaw.tc.OTScopeRequest
 import com.otpless.v2.android.sdk.dto.OtplessChannelType
 import com.otpless.v2.android.sdk.dto.OtplessRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
@@ -59,12 +61,9 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun isWhatsappInstalled(callback: Callback) {
+  fun isWhatsappInstalled(promise: Promise) {
     val hasWhatsapp = OtplessUtils.isWhatsAppInstalled(reactContext)
-    val json = JSONObject().also {
-      it.put("hasWhatsapp", hasWhatsapp)
-    }
-    callback.invoke(convertJsonToMap(json))
+    promise.resolve(hasWhatsapp)
   }
 
   @ReactMethod
@@ -76,6 +75,17 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         loginUri = loginUri
       )
     }
+  }
+
+  @ReactMethod
+  fun initTrueCaller(requestMap: ReadableMap, promise: Promise) {
+    val request = parseTrueCallerRequest(requestMap)
+    val scopes = parseTrueCallerScope(requestMap)
+    val result = OtplessSDK.initTrueCaller(currentActivity!!, request) {
+      OTScopeRequest.ActivityRequest(currentActivity as FragmentActivity, scopes)
+    }
+    debugLog("init truecaller result: $result")
+    promise.resolve(result)
   }
 
   @ReactMethod
@@ -149,6 +159,12 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   fun cleanup() {
     otplessJob?.cancel()
     OtplessSDK.cleanup()
+  }
+
+  @ReactMethod
+  fun setDevLogging(devLogging: Boolean) {
+    debugLog("dev logging: $devLogging")
+    OtplessSDK.devLogging = devLogging
   }
 
   companion object {

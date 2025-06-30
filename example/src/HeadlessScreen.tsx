@@ -18,7 +18,8 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("OD6F3SJGCP93605DA5OM")
+        headlessModule.initialize("YOUR_APP_ID")
+        headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
 
         return () => {
@@ -33,7 +34,7 @@ export default function HeadlessPage() {
         }));
     };
 
-    const startHeadless = () => {
+    const startHeadless = async () => {
         let headlessRequest: any = {};
         const { phoneNumber, countryCode, otp, channelType, email, expiry, otpLength, deliveryChannel, tid } = form;
 
@@ -70,6 +71,14 @@ export default function HeadlessPage() {
     };
 
     const onHeadlessResult = (data: any) => {
+        if (data.responseType === 'SDK_READY' && data.statusCode == 200) {
+            headlessModule.initTrueCaller({
+                scope: ['open_id', "phone", 'profile']
+            }).then(result => {
+                console.log("result of truecaller: " + result);
+            });
+            
+        }
         const dataStr = JSON.stringify(data);
         setResult(dataStr);
         headlessModule.commitResponse(data);

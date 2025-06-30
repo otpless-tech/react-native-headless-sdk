@@ -78,8 +78,8 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       }
   }
   
-  @objc(enableDebugLogging:)
-  func enableDebugLogging(enable: Bool) {
+  @objc(setDevLogging:)
+  func setDevLogging(enable: Bool) {
     if enable {
       Otpless.shared.setLoggerDelegate(self)
     }
