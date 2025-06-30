@@ -184,15 +184,7 @@ internal fun parseTrueCallerScope(requestMap: ReadableMap): List<OTScope> {
     val scopes = mutableListOf<OTScope>()
     for (index in 0 until scopeArray.size()) {
       val value = scopeArray.getString(index)
-      val scopeType = when (value) {
-        "phone" -> OTScope.PHONE
-        "open_id" -> OTScope.OPEN_ID
-        "profile" -> OTScope.PROFILE
-        "email" -> OTScope.EMAIL
-        "address" -> OTScope.ADDRESS
-        "offline_access" -> OTScope.OFFLINE_ACCESS
-        else -> continue
-      }
+      val scopeType = OTScope.values().firstOrNull { it.name.equals(value, ignoreCase = true)} ?: continue
       scopes.add(scopeType)
     }
     return scopes
