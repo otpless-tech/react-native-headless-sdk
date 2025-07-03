@@ -160,7 +160,7 @@ internal fun parseTrueCallerRequest(requestMap: ReadableMap): OtplessTruecallerR
   // parsing locale
   val locale: Locale? = trueCallerRequestMap.getString("locale")?.let { str ->
     try {
-      Locale.forLanguageTag(str)
+      parseLocale(str)
     } catch (ignore: Exception) {
       null
     }
@@ -202,5 +202,15 @@ private const val LOGTAG = "OtplessHeadlessRN"
 internal fun debugLog(message: String) {
   if (BuildConfig.DEBUG) {
     Log.d(LOGTAG, message)
+  }
+}
+
+// locale parsing language and country
+internal fun parseLocale(str: String): Locale? {
+  val parts = str.split('-', '_')
+  return if (parts.size == 2) {
+    Locale(parts[0], parts[1])
+  } else {
+    null
   }
 }
