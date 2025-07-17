@@ -172,7 +172,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   override fun onActivityResult(
-    activity: Activity?,
+    activity: Activity,
     requestCode: Int,
     resultCode: Int,
     data: Intent?
@@ -180,8 +180,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     OtplessSDK.onActivityResult(requestCode, resultCode, data)
   }
 
-  override fun onNewIntent(intent: Intent?) {
-    intent ?: return
+  override fun onNewIntent(intent: Intent) {
     OtplessSDK.onNewIntentAsync(intent)
   }
 
