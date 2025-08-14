@@ -9,16 +9,20 @@
     "pods": "pod-install --quiet"
   },
   "dependencies": {
-    "react": "18.2.0",
-    "react-native": "0.73.2"
+    "otpless-headless-rn": "file:../",
+    "react": "19.1.0",
+    "react-native": "0.80.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
-    "@babel/preset-env": "^7.20.0",
-    "@babel/runtime": "^7.20.0",
-    "@react-native/babel-preset": "0.73.19",
-    "@react-native/metro-config": "^0.73.5",
-    "@react-native/typescript-config": "0.73.1",
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "^15.1.2",
+    "@react-native-community/cli-platform-android": "^15.1.2",
+    "@react-native-community/cli-platform-ios": "^15.1.2",
+    "@react-native/babel-preset": "0.80.2",
+    "@react-native/metro-config": "0.80.2",
+    "@react-native/typescript-config": "0.80.2",
     "babel-plugin-module-resolver": "^5.0.0",
     "pod-install": "^0.1.0",
     "react-devtools": "^6.1.1",

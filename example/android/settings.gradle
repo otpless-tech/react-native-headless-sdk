@@ -1,4 +1,30 @@
+import org.gradle.api.initialization.resolve.RepositoriesMode
+pluginManagement {
+  repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
+  }
+  includeBuild("../node_modules/@react-native/gradle-plugin")
+}
+plugins {
+    id("com.facebook.react.settings")
+}
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
+}
+
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+  repositories {
+    google()
+    mavenCentral()
+    maven { url "https://maven.fpregistry.io/releases" }
+    maven { url "https://www.jitpack.io" }
+  }
+}
+
 rootProject.name = 'OtplessHeadlessRNExample'
-apply from: file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesSettingsGradle(settings)
 include ':app'
-includeBuild('../node_modules/@react-native/gradle-plugin')
+include ':otpless-headless-rn'
+project(':otpless-headless-rn').projectDir = new File(rootProject.projectDir, '../../android')

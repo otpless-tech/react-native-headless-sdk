@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
+import React, {useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { OtplessHeadlessModule } from 'otpless-headless-rn';
 
 export default function HeadlessPage() {
@@ -91,7 +91,7 @@ export default function HeadlessPage() {
     };
 
     const copyToClipboard = () => {
-        Clipboard.setString(result);
+        console.log("clipboard is not ready")
     };
 
     const cleanupAndReinitialize = () => {

@@ -68,7 +68,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initialize(appId: String, loginUri: String? = null) {
-    currentActivity?.let {
+    reactContext.currentActivity?.let {
       OtplessSDK.initialize(
         appId = appId,
         activity = it,
@@ -81,8 +81,8 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   fun initTrueCaller(requestMap: ReadableMap, promise: Promise) {
     val request = parseTrueCallerRequest(requestMap)
     val scopes = parseTrueCallerScope(requestMap)
-    val result = OtplessSDK.initTrueCaller(currentActivity!!, request) {
-      OTScopeRequest.ActivityRequest(currentActivity as FragmentActivity, scopes)
+    val result = OtplessSDK.initTrueCaller(reactContext.currentActivity!!, request) {
+      OTScopeRequest.ActivityRequest(reactContext.currentActivity as FragmentActivity, scopes)
     }
     debugLog("init truecaller result: $result")
     promise.resolve(result)
@@ -140,7 +140,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
     } else {
       otplessJob?.cancel()
-      currentActivity?.let {
+      reactContext.currentActivity?.let {
         otplessJob = (it as AppCompatActivity).lifecycleScope.launch {
           OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
         }
@@ -171,17 +171,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     const val NAME = "OtplessHeadlessRN"
   }
 
-  override fun onActivityResult(
-    activity: Activity?,
-    requestCode: Int,
-    resultCode: Int,
-    data: Intent?
-  ) {
+  override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
     OtplessSDK.onActivityResult(requestCode, resultCode, data)
   }
 
-  override fun onNewIntent(intent: Intent?) {
-    intent ?: return
+  override fun onNewIntent(intent: Intent) {
     OtplessSDK.onNewIntentAsync(intent)
   }
 

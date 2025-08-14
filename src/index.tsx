@@ -90,6 +90,5 @@ class OtplessHeadlessModule {
   
 }
 
-
 export { OtplessHeadlessModule };
 export * from './models'
