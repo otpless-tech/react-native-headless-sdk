@@ -1,4 +1,5 @@
-import { NativeModules, Platform, NativeEventEmitter, DeviceEventEmitter } from 'react-native';
+import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
+import type { EmitterSubscription } from 'react-native';
 import type { OtplessTruecallerRequest } from './models';
 
 
@@ -25,26 +26,23 @@ interface OtplessResultCallback {
 }
 
 class OtplessHeadlessModule {
-  private eventEmitter: NativeEventEmitter | null = null;
+  private emitter = new NativeEventEmitter(OtplessHeadlessRN);
+  private eventSubscription: EmitterSubscription | null = null;
 
-  constructor() {
-    this.eventEmitter = null;
-  }
 
   clearListener() {
-    this.eventEmitter?.removeAllListeners('OTPlessEventResult');
+    this.eventSubscription?.remove();
+    this.eventSubscription = null;
   }
 
   initialize(appId: String, loginUri: string | null = null) {
-    if (this.eventEmitter == null) {
-      this.eventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
-    }
     // call the native method
     OtplessHeadlessRN.initialize(appId, loginUri);
   }
 
   setResponseCallback(callback: OtplessResultCallback) {
-    this.eventEmitter?.addListener('OTPlessEventResult', callback);
+    this.eventSubscription?.remove();
+    this.eventSubscription = this.emitter.addListener('OTPlessEventResult', callback);
     // call the native method
     OtplessHeadlessRN.setResponseCallback()
   }

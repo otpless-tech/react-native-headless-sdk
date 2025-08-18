@@ -2,8 +2,9 @@ import React, {useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { OtplessHeadlessModule } from 'otpless-headless-rn';
 
+const headlessModule = new OtplessHeadlessModule();
+
 export default function HeadlessPage() {
-    const headlessModule = new OtplessHeadlessModule();
     const [result, setResult] = useState('');
     const [form, setForm] = useState({
         phoneNumber: '',
@@ -70,6 +71,7 @@ export default function HeadlessPage() {
     };
 
     const onHeadlessResult = (data: any) => {
+        console.log("received response data")
         if (data.responseType === 'SDK_READY' && data.statusCode == 200) {
             headlessModule.initTrueCaller({
                 scope: ['open_id', "phone", 'profile']

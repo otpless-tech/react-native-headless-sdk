@@ -12,7 +12,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter
 import com.otpless.longclaw.tc.OTScopeRequest
 import com.otpless.v2.android.sdk.dto.OtplessChannelType
 import com.otpless.v2.android.sdk.dto.OtplessRequest
@@ -51,15 +51,6 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   private fun sendHeadlessEventCallback(result: OtplessResponse) {
-    fun sendResultEvent(result: JSONObject) {
-      try {
-        val map = convertJsonToMap(result)
-        this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-          .emit("OTPlessEventResult", map)
-      } catch (_: JSONException) {
-      }
-    }
-
     val jsonObject = JSONObject()
     try {
       jsonObject.put("responseType", result.responseType.name)
@@ -68,7 +59,25 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     } catch (_: JSONException) {
 
     }
-    sendResultEvent(jsonObject)
+    emitRctEvent(jsonObject)
+  }
+
+  private fun emitRctEvent(result: JSONObject) {
+    val ctx = reactContext
+    if (!ctx.hasActiveReactInstance()) {
+      Log.w("OtplessV2", "No active RN instance; dropping $name")
+      return
+    }
+    ctx.runOnUiQueueThread {
+      try {
+        val data = convertJsonToMap(result)
+        ctx.getJSModule(RCTDeviceEventEmitter::class.java)
+          .emit("OTPlessEventResult", data)
+        Log.d("OtplessV2", "response sent: $result")
+      } catch (t: Throwable) {
+        Log.e("OtplessV2", "Emit failed", t)
+      }
+    }
   }
 
   @ReactMethod
