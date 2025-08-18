@@ -2,6 +2,7 @@ package com.otplessheadlessrn
 
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +39,17 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     return NAME
   }
 
+  // Required for NativeEventEmitter in RN 0.74+
+  @ReactMethod
+  fun addListener(eventName: String) {
+    Log.d("OtplessV2", "listener name: $eventName added")
+  }
+
+  @ReactMethod
+  fun removeListeners(count: Int) {
+    Log.d("OtplessV2", "listener removed count: $count")
+  }
+
   private fun sendHeadlessEventCallback(result: OtplessResponse) {
     fun sendResultEvent(result: JSONObject) {
       try {
@@ -45,13 +57,12 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
           .emit("OTPlessEventResult", map)
       } catch (_: JSONException) {
-
       }
     }
 
     val jsonObject = JSONObject()
     try {
-      jsonObject.put("responseType", result.responseType)
+      jsonObject.put("responseType", result.responseType.name)
       jsonObject.put("response", result.response)
       jsonObject.put("statusCode", result.statusCode)
     } catch (_: JSONException) {

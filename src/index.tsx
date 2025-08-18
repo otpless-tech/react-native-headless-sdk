@@ -1,4 +1,4 @@
-import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
+import { NativeModules, Platform, NativeEventEmitter, DeviceEventEmitter } from 'react-native';
 import type { OtplessTruecallerRequest } from './models';
 
 

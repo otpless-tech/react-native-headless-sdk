@@ -18,10 +18,9 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("YOUR_APP_ID")
-        headlessModule.setDevLogging(true)
+        headlessModule.initialize("BL7SLBELGJFMQGVLXHRH");
+        headlessModule.setDevLogging(true);
         headlessModule.setResponseCallback(onHeadlessResult);
-
         return () => {
             headlessModule.clearListener();
         };
@@ -90,10 +89,6 @@ export default function HeadlessPage() {
         }
     };
 
-    const copyToClipboard = () => {
-        console.log("clipboard is not ready")
-    };
-
     const cleanupAndReinitialize = () => {
         headlessModule.cleanup();
         headlessModule.initialize("OD6F3SJGCP93605DA5OM");
@@ -103,7 +98,7 @@ export default function HeadlessPage() {
     return (
         <ScrollView >
             <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, marginTop: 80 }]}
                 placeholder="Phone Number"
                 placeholderTextColor="#999"
                 value={form.phoneNumber}
@@ -185,10 +180,6 @@ export default function HeadlessPage() {
 
             <TouchableOpacity style={styles.primaryButton} onPress={startHeadless}>
                 <Text style={styles.buttonText}>Start Headless</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.primaryButton} onPress={copyToClipboard}>
-                <Text style={styles.buttonText}>Copy Result</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.primaryButton} onPress={cleanupAndReinitialize}>
