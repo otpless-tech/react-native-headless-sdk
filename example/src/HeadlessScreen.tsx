@@ -68,6 +68,7 @@ export default function HeadlessPage() {
         }
 
         headlessModule.start(headlessRequest);
+        setResult("=====headless started=====>")
     };
 
     const onHeadlessResult = (data: any) => {

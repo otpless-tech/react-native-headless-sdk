@@ -101,7 +101,7 @@ if (localPropertiesFile.exists()) {
 android {
     compileSdk 35
     namespace "com.otplessheadlessrn"
-    ndkVersion "26.1.10909125"
+    ndkVersion = "27.1.12297006"
     defaultConfig {
         applicationId "com.digvijayanubhav.app"
         minSdkVersion 24

@@ -20,7 +20,7 @@ const config = {
   // So we block them at the root, and alias them to the versions in example's node_modules
   resolver: {
     unstable_enablePackageExports: false,
-    blacklistRE: exclusionList(
+    blockList: exclusionList(
       modules.map(
         (m) =>
           new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`)
