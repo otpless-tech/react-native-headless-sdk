@@ -151,6 +151,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
+  fun isSdkReady(promise: Promise) {
+    promise.resolve(OtplessSDK.isSdkReady)
+  }
+
+  @ReactMethod
   fun setResponseCallback() {
     OtplessSDK.setResponseCallback(this::sendHeadlessEventCallback)
   }

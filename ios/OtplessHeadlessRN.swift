@@ -89,6 +89,11 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     return ["OTPlessEventResult"]
   }
   
+  @objc(isSdkReady:reject:)
+  func isSdkReady(resolve:RCTPromiseResolveBlock, reject:RCTPromiseRejectBlock) {
+    resolve(Otpless.shared.isSdkReady())
+  }
+  
   @objc(initialize:loginUri:)
   func initialize(appId: String, loginUri: String?) {
     DispatchQueue.main.async {
