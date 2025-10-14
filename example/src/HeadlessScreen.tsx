@@ -18,7 +18,7 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("BL7SLBELGJFMQGVLXHRH")
+        headlessModule.initialize("YOUR_APP_ID")
         headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
 
