@@ -78,7 +78,11 @@ class OtplessHeadlessModule {
   }
 
   setDevLogging(enable: boolean) {
-    OtplessHeadlessRN.setDevLogging(enable)
+    OtplessHeadlessRN.setDevLogging(enable);
+  }
+
+  async isSdkReady(): Promise<boolean> {
+    return await OtplessHeadlessRN.isSdkReady();
   }
 
   async initTrueCaller(requestMap: OtplessTruecallerRequest): Promise<boolean> {

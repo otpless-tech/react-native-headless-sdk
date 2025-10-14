@@ -18,7 +18,7 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("YOUR_APP_ID")
+        headlessModule.initialize("BL7SLBELGJFMQGVLXHRH")
         headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
 
@@ -35,6 +35,12 @@ export default function HeadlessPage() {
     };
 
     const startHeadless = async () => {
+        let isSdkReady = await headlessModule.isSdkReady();
+        if(!isSdkReady) {
+            setResult("sdk is not ready");
+            return;
+        }
+        console.log("<<<<<SDK is READY>>>>>");
         let headlessRequest: any = {};
         const { phoneNumber, countryCode, otp, channelType, email, expiry, otpLength, deliveryChannel, tid } = form;
 
