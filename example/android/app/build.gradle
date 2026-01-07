@@ -169,6 +169,7 @@ dependencies {
     //region secure sdk
     implementation 'io.github.otpless-tech:otpless-secure-sdk:0.1.5'
     implementation "io.github.otpless-tech:otpless-truecaller-sdk-impl:1.0.2"
+    implementation("io.github.otpless-tech:otpless-intelligence-sdk:1.0.5")
     //endregion
 }
 

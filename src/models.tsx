@@ -88,3 +88,9 @@ export type OTCtaText =
     | 'cta_text_continue'
     | 'cta_text_accept'
     | 'cta_text_confirm';
+
+export interface OtplessAuthConfig {
+    isForeground: boolean;
+    otp?: string;
+    tid?: string;
+};

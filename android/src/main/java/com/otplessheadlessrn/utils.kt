@@ -214,3 +214,36 @@ internal fun parseLocale(str: String): Locale? {
     null
   }
 }
+
+internal fun readableMapToKotlinMap(readableMap: ReadableMap): Map<String, Any> {
+  val result = mutableMapOf<String, Any>()
+  val it = readableMap.keySetIterator()
+  while (it.hasNextKey()) {
+    val key = it.nextKey()
+    when (readableMap.getType(key)) {
+      ReadableType.Null -> Unit // skip nulls
+      ReadableType.Boolean -> result[key] = readableMap.getBoolean(key)
+      ReadableType.String -> readableMap.getString(key)?.let { result[key] = it }
+      ReadableType.Number -> result[key] = readableMap.getDouble(key)
+      ReadableType.Map -> readableMap.getMap(key)?.let { result[key] = readableMapToKotlinMap(it) }
+      ReadableType.Array -> readableMap.getArray(key)?.let { result[key] = readableArrayToKotlinList(it) }
+    }
+  }
+  return result
+}
+
+internal fun readableArrayToKotlinList(readableArray: ReadableArray): List<Any> {
+  val result = mutableListOf<Any>()
+  for (i in 0 until readableArray.size()) {
+    when (readableArray.getType(i)) {
+      ReadableType.Null -> Unit // skip nulls (no infinite loop)
+      ReadableType.Boolean -> result.add(readableArray.getBoolean(i))
+      ReadableType.String -> readableArray.getString(i).let { result.add(it) }
+      ReadableType.Number -> result.add(readableArray.getDouble(i))
+      ReadableType.Map -> readableArray.getMap(i).let { result.add(readableMapToKotlinMap(it)) }
+      ReadableType.Array -> readableArray.getArray(i).let { result.add(readableArrayToKotlinList(it)) }
+    }
+  }
+  return result
+}
+

@@ -13,12 +13,12 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
-import com.otpless.v2.android.sdk.dto.OtplessChannelType
-import com.otpless.v2.android.sdk.dto.OtplessRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.ResponseTypes
+import com.otpless.v2.android.sdk.intelligence.IntelligenceInfoData
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONException
@@ -28,9 +28,9 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
   private var otplessJob: Job? = null
+  private var initJob: Job? = null
 
   init {
-    OtplessHeadlessRNManager.registerOtplessModule(this)
     reactContext.addActivityEventListener(this)
   }
 
@@ -60,23 +60,26 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     sendResultEvent(jsonObject)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun isWhatsappInstalled(promise: Promise) {
     val hasWhatsapp = OtplessUtils.isWhatsAppInstalled(reactContext)
     promise.resolve(hasWhatsapp)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun initialize(appId: String, loginUri: String? = null) {
-    currentActivity?.let {
+    initJob?.cancel()
+    initJob = (currentActivity as? FragmentActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
       OtplessSDK.initialize(
-        appId = appId,
-        activity = it,
-        loginUri = loginUri
+        appId = appId, activity = currentActivity!!, loginUri = loginUri,
+        callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
       )
     }
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun initTrueCaller(requestMap: ReadableMap, promise: Promise) {
     val request = parseTrueCallerRequest(requestMap)
@@ -88,92 +91,80 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     promise.resolve(result)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun start(data: ReadableMap) {
-    val otplessRequest = OtplessRequest()
-    val phone = data.getString("phone") ?: ""
-    var isOtpPresent = false
-
-    // phone number authentication
-    if (phone.isNotEmpty()) {
-      val countryCode = data.getString("countryCode") ?: ""
-      otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
-      data.getString("otp")?.let {
-        otplessRequest.setOtp(it)
-        isOtpPresent = true
-      }
-    } else {
-      // email authentication
-      val email = data.getString("email") ?: ""
-      if (email.isNotEmpty()) {
-        otplessRequest.setEmail(email)
-        data.getString("otp")?.let {
-          otplessRequest.setOtp(it)
-          isOtpPresent = true
-        }
-      } else {
-        // oauth case
-        otplessRequest.setChannelType(
-          OtplessChannelType.fromString(
-            data.getString("channelType") ?: ""
-          )
-        )
-      }
-    }
-    data.getString("expiry")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.setExpiry(it)
-    }
-
-    data.getString("otpLength")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.setOtpLength(it)
-    }
-
-    data.getString("deliveryChannel")?.takeIf { it.isNotBlank() }?.let { deliveryChannel ->
-      otplessRequest.setDeliveryChannel(deliveryChannel.uppercase())
-    }
-
-    data.getString("tid")?.takeIf { it.isNotBlank() }?.let { templateId ->
-      otplessRequest.setTemplateId(templateId)
-    }
-
-    if (isOtpPresent) {
-        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-    } else {
-      otplessJob?.cancel()
-      currentActivity?.let {
-        otplessJob = (it as AppCompatActivity).lifecycleScope.launch {
-          OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-        }
-      } ?: run {
-        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-      }
+    val otplessRequest = parseToOtplessRequest(data)
+    otplessJob?.cancel()
+    otplessJob = (currentActivity as? AppCompatActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
+      OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
     }
   }
 
+  @Suppress("unused")
+  @ReactMethod
+  fun startAuth(data: ReadableMap, promise: Promise) {
+    val authRequest = parseToOtplessAuthRequest(data)
+    otplessJob?.cancel()
+    (currentActivity as? AppCompatActivity)?.let {
+      otplessJob = it.lifecycleScope.launch(Dispatchers.IO) {
+        val result = OtplessSDK.start(authRequest)
+        promise.resolve(result)
+      }
+    } ?: promise.resolve(false)
+  }
+
+  @Suppress("unused")
   @ReactMethod
   fun isSdkReady(promise: Promise) {
     promise.resolve(OtplessSDK.isSdkReady)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun setResponseCallback() {
     OtplessSDK.setResponseCallback(this::sendHeadlessEventCallback)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun cleanup() {
     otplessJob?.cancel()
     OtplessSDK.cleanup()
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun setDevLogging(devLogging: Boolean) {
     debugLog("dev logging: $devLogging")
     OtplessSDK.devLogging = devLogging
   }
 
+  @Suppress("unused")
+  @ReactMethod
+  fun initIntelligence(credReadableMap: ReadableMap) {
+    val cred = readableMapToKotlinMap(credReadableMap)
+    OtplessSDK.initIntelligence(reactContext, cred as Map<String, String>)
+    OtplessSDK.setIntelligenceCallback(this::onIntelligenceResponse)
+  }
+
+  @Suppress("unused")
+  @ReactMethod
+  fun fetchIntelligence() {
+    OtplessSDK.fetchIntelligence()
+  }
+
+  private fun onIntelligenceResponse(result: Result<IntelligenceInfoData>) {
+    val writeableMap = convertIntoWritableMap(result)
+    runCatching {
+      this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+        .emit(INTELLIGENCE_RESULT_EVENT_EMITTER, writeableMap)
+    }
+  }
+
   companion object {
     const val NAME = "OtplessHeadlessRN"
+    private const val INTELLIGENCE_RESULT_EVENT_EMITTER = "OTPlessIntelligenceResult"
   }
 
   override fun onActivityResult(
@@ -190,6 +181,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     OtplessSDK.onNewIntentAsync(intent)
   }
 
+  @Suppress("unused")
   @ReactMethod
   fun commitResponse(data: ReadableMap?) {
     val dataMap = data?.toHashMap() ?: return

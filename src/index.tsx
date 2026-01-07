@@ -1,5 +1,5 @@
 import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
-import type { OtplessTruecallerRequest } from './models';
+import type { OtplessAuthConfig, OtplessTruecallerRequest } from './models';
 
 
 
@@ -26,6 +26,7 @@ interface OtplessResultCallback {
 
 class OtplessHeadlessModule {
   private eventEmitter: NativeEventEmitter | null = null;
+  private intelligenceEventEmitter: NativeEventEmitter | null = null;
 
   constructor() {
     this.eventEmitter = null;
@@ -90,6 +91,30 @@ class OtplessHeadlessModule {
       return await OtplessHeadlessRN.initTrueCaller(requestMap);
     }
     return false;
+  }
+
+  async startAuth(authConfig: OtplessAuthConfig): Promise<boolean> {
+    return await OtplessHeadlessRN.startAuth(authConfig);
+  }
+
+  async initIntelligence(creds: any) {
+    OtplessHeadlessRN.initIntelligence(creds)
+  }
+
+  async fetchIntelligence() {
+    OtplessHeadlessRN.fetchIntelligence()
+  }
+
+  setIntelligenceCallback(callback: OtplessResultCallback) {
+    if (this.intelligenceEventEmitter == null) {
+      this.intelligenceEventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
+    }
+    this.intelligenceEventEmitter.removeAllListeners('OTPlessIntelligenceResult');
+    this.intelligenceEventEmitter.addListener("OTPlessIntelligenceResult", callback)
+  }
+
+  clearIntelligenceCallback() {
+    this.intelligenceEventEmitter?.removeAllListeners("OTPlessIntelligenceResult")
   }
   
 }

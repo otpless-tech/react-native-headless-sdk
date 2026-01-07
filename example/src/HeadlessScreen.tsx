@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
-import { OtplessHeadlessModule } from 'otpless-headless-rn';
+import { type OtplessAuthConfig } from 'otpless-headless-rn';
+import { otplessHeadlessModule } from './App';
 
 export default function HeadlessPage() {
-    const headlessModule = new OtplessHeadlessModule();
+    const headlessModule = otplessHeadlessModule;
     const [result, setResult] = useState('');
     const [form, setForm] = useState({
         phoneNumber: '',
@@ -18,10 +19,10 @@ export default function HeadlessPage() {
     });
 
     useEffect(() => {
-        headlessModule.initialize("YOUR_APP_ID")
+        headlessModule.initialize("UKFVE9VSC1UDAUANZFL3")
         headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
-
+        headlessModule.setIntelligenceCallback(onIntelligenceResult);
         return () => {
             headlessModule.clearListener();
         };
@@ -33,6 +34,11 @@ export default function HeadlessPage() {
             [fieldName]: value,
         }));
     };
+
+    const onIntelligenceResult = (data: any) => {
+        const json = JSON.stringify(data);
+        setResult(json);
+    }
 
     const startHeadless = async () => {
         let isSdkReady = await headlessModule.isSdkReady();
@@ -100,10 +106,12 @@ export default function HeadlessPage() {
         Clipboard.setString(result);
     };
 
-    const cleanupAndReinitialize = () => {
-        headlessModule.cleanup();
-        headlessModule.initialize("OD6F3SJGCP93605DA5OM");
-        headlessModule.setResponseCallback(onHeadlessResult);
+    const startBackgroundAuth = () => {
+        const otplessAuth: OtplessAuthConfig = {isForeground: false}
+        headlessModule.startAuth(otplessAuth).then((isSuccess) => {
+            const isAuthSuccess = "auth success: " + isSuccess ;
+            setResult(isAuthSuccess);
+        });
     }
 
     return (
@@ -197,8 +205,12 @@ export default function HeadlessPage() {
                 <Text style={styles.buttonText}>Copy Result</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={cleanupAndReinitialize}>
-                <Text style={styles.buttonText}>Cleanup & Re initialize</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={startBackgroundAuth}>
+                <Text style={styles.buttonText}>Start Background Auth</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={headlessModule.fetchIntelligence}>
+                <Text style={styles.buttonText}>Start Intelligence</Text>
             </TouchableOpacity>
 
             <Text style={styles.resultText}>{result}</Text>
