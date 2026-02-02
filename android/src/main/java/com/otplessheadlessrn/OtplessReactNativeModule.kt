@@ -19,6 +19,8 @@ import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.ResponseTypes
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONException
@@ -68,12 +70,22 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initialize(appId: String, loginUri: String? = null) {
-    currentActivity?.let {
-      OtplessSDK.initialize(
-        appId = appId,
-        activity = it,
-        loginUri = loginUri
-      )
+    (currentActivity as? AppCompatActivity)?.lifecycleScope?.let { scope ->
+      scope.launch(Dispatchers.IO) {
+        OtplessSDK.initialize(
+          appId = appId,
+          activity = currentActivity!!,
+          loginUri = loginUri
+        )
+      }
+    } ?: run {
+      CoroutineScope(Dispatchers.IO).launch {
+        OtplessSDK.initialize(
+          appId = appId,
+          activity = currentActivity!!,
+          loginUri = loginUri
+        )
+      }
     }
   }
 
@@ -136,16 +148,18 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
       otplessRequest.setTemplateId(templateId)
     }
 
-    if (isOtpPresent) {
-        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-    } else {
-      otplessJob?.cancel()
-      currentActivity?.let {
+    otplessJob?.cancel()
+    currentActivity?.let {
+      if (isOtpPresent) (it as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
+        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      } else {
         otplessJob = (it as AppCompatActivity).lifecycleScope.launch {
           OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
         }
-      } ?: run {
-        OtplessSDK.startAsync(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
+    } ?:  run {
+      CoroutineScope(Dispatchers.IO).launch {
+        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
       }
     }
   }
@@ -187,7 +201,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   override fun onNewIntent(intent: Intent?) {
     intent ?: return
-    OtplessSDK.onNewIntentAsync(intent)
+    (currentActivity as? AppCompatActivity)?.let { ac ->
+      ac.lifecycleScope.launch(Dispatchers.IO) {
+        OtplessSDK.onNewIntent(intent)
+      }
+    }
   }
 
   @ReactMethod
