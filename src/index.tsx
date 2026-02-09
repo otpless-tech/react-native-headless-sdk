@@ -45,8 +45,6 @@ class OtplessHeadlessModule {
 
   setResponseCallback(callback: OtplessResultCallback) {
     this.eventEmitter?.addListener('OTPlessEventResult', callback);
-    // call the native method
-    OtplessHeadlessRN.setResponseCallback()
   }
 
   start(input: any) {

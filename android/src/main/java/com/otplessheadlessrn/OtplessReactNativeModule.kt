@@ -32,7 +32,6 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   private var otplessJob: Job? = null
 
   init {
-    OtplessHeadlessRNManager.registerOtplessModule(this)
     reactContext.addActivityEventListener(this)
   }
 
@@ -75,7 +74,8 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         OtplessSDK.initialize(
           appId = appId,
           activity = currentActivity!!,
-          loginUri = loginUri
+          loginUri = loginUri,
+          callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
         )
       }
     } ?: run {
@@ -83,7 +83,8 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         OtplessSDK.initialize(
           appId = appId,
           activity = currentActivity!!,
-          loginUri = loginUri
+          loginUri = loginUri,
+          callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
         )
       }
     }
