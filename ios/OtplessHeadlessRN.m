@@ -7,8 +7,6 @@ RCT_EXTERN_METHOD(initialize:(NSString *)appId
                   loginUri: (nullable NSString *) loginUri
                   )
 
-RCT_EXTERN_METHOD(setResponseCallback)
-
 RCT_EXTERN_METHOD(start:(NSDictionary *)request)
 
 RCT_EXTERN_METHOD(commitResponse: (nullable NSDictionary *) response)

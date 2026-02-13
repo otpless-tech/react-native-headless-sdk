@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
 import { OtplessHeadlessModule } from 'otpless-headless-rn';
 
+const headlessModule = new OtplessHeadlessModule();
+
 export default function HeadlessPage() {
-    const headlessModule = new OtplessHeadlessModule();
+    
     const [result, setResult] = useState('');
     const [form, setForm] = useState({
         phoneNumber: '',
@@ -16,12 +18,12 @@ export default function HeadlessPage() {
         deliveryChannel: '',
         tid: '',
     });
+    const APP_ID = "YOUR_APP_ID";
 
     useEffect(() => {
-        headlessModule.initialize("YOUR_APP_ID")
+        headlessModule.initialize(APP_ID)
         headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
-
         return () => {
             headlessModule.clearListener();
         };
@@ -86,7 +88,7 @@ export default function HeadlessPage() {
             
         }
         const dataStr = JSON.stringify(data);
-        setResult(dataStr);
+        setResult((prev) => prev ? `${dataStr}\n\n${prev}`: dataStr);
         headlessModule.commitResponse(data);
         if (data.responseType == "OTP_AUTO_READ") {
             setForm((prevForm) => ({
@@ -102,7 +104,8 @@ export default function HeadlessPage() {
 
     const cleanupAndReinitialize = () => {
         headlessModule.cleanup();
-        headlessModule.initialize("OD6F3SJGCP93605DA5OM");
+        headlessModule.clearListener();
+        headlessModule.initialize(APP_ID);
         headlessModule.setResponseCallback(onHeadlessResult);
     }
 

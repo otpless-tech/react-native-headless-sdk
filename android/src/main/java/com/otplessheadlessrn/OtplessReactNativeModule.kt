@@ -171,11 +171,6 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun setResponseCallback() {
-    OtplessSDK.setResponseCallback(this::sendHeadlessEventCallback)
-  }
-
-  @ReactMethod
   fun cleanup() {
     otplessJob?.cancel()
     OtplessSDK.cleanup()
