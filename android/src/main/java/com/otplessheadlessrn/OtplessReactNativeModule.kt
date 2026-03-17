@@ -69,6 +69,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initialize(appId: String, loginUri: String? = null) {
+    if (currentActivity == null) return
     (currentActivity as? AppCompatActivity)?.lifecycleScope?.let { scope ->
       scope.launch(Dispatchers.IO) {
         OtplessSDK.initialize(
@@ -92,6 +93,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initTrueCaller(requestMap: ReadableMap, promise: Promise) {
+    if (currentActivity == null) return
     val request = parseTrueCallerRequest(requestMap)
     val scopes = parseTrueCallerScope(requestMap)
     val result = OtplessSDK.initTrueCaller(currentActivity!!, request) {
