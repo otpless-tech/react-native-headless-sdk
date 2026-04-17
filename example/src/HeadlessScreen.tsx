@@ -87,6 +87,7 @@ export default function HeadlessPage() {
             });
             
         }
+        console.log(JSON.stringify(data));
         const dataStr = JSON.stringify(data);
         setResult((prev) => prev ? `${dataStr}\n\n${prev}`: dataStr);
         headlessModule.commitResponse(data);
