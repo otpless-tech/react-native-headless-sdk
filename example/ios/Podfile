@@ -39,6 +39,9 @@ target 'OtplessHeadlessRNExample' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  pod 'OtplessBM/GoogleSupport'
+  pod 'OtplessBM/FacebookSupport'
+
   target 'OtplessHeadlessRNExampleTests' do
     inherit! :complete
     # Pods for testing

@@ -30,27 +30,23 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>otpless.OD6F3SJGCP93605DA5OM</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>DOT_REVERSED_GOOGLE_CLIENT_ID</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>fb{FBAPPID}</string>
+				<string>fb{FACEBOOK_APP_ID}</string>
+        		<string>DOT_REVERSED_GOOGLE_CLIENT_ID</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FacebookAppID</key>
+	<string>FACEBOOK_APP_ID</string>
+	<key>FacebookClientToken</key>
+	<string>FACEBOOK_CLIENT_TOKEN</string>
 	<key>FacebookDisplayName</key>
 	<string>OtplessDemo</string>
 	<key>GIDClientID</key>
 	<string>GOOGLE_CLIENT_ID</string>
+	<key>GIDServerClientID</key>
+	<string>GOOGLE_SERVER_ID</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>

@@ -20,7 +20,9 @@ class Connector: NSObject {
   }
   
   @objc public static func registerFBApp(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-//    Otpless.shared.registerFBApp(application, didFinishLaunchingWithOptions: launchOptions)
+    Task { @MainActor in
+      Otpless.shared.registerFBApp(application, didFinishLaunchingWithOptions: launchOptions)
+    }
   }
   
   @objc public static func registerFBApp(
@@ -28,13 +30,17 @@ class Connector: NSObject {
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) {
-//    Otpless.shared.registerFBApp(app, open: url, options: options)
+    Task { @MainActor in
+      Otpless.shared.registerFBApp(app, open: url, options: options)
+    }
   }
   
   @available(iOS 13.0, *)
   @objc public static func registerFBApp(
     openURLContexts URLContexts: Set<UIOpenURLContext>
   ) {
-//    Otpless.shared.registerFBApp(openURLContexts: URLContexts)
+    Task { @MainActor in
+      await Otpless.shared.registerFBApp(openURLContexts: URLContexts)
+    }
   }
 }
