@@ -209,7 +209,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   @ReactMethod
   fun commitResponse(data: ReadableMap?) {
     val dataMap = data?.toHashMap() ?: return
-    val jsonResponse = JSONObject(dataMap)
+    val jsonResponse = JSONObject(dataMap as Map<*, *>)
     val otplessResponse = OtplessResponse(
       responseType = getResponseType(
         responseTypeString = jsonResponse.optString(
