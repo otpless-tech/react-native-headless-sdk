@@ -1,7 +1,9 @@
 import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
-import type { OtplessTruecallerRequest } from './models';
-
-
+import type {
+  OtplessTruecallerRequest,
+  OtplessAuthEvent,
+  OtplessProviderType,
+} from './models';
 
 const LINKING_ERROR =
   `The package 'otpless-headless-rn' doesn't seem to be linked. Make sure: \n\n` +
@@ -12,13 +14,13 @@ const LINKING_ERROR =
 const OtplessHeadlessRN = NativeModules.OtplessHeadlessRN
   ? NativeModules.OtplessHeadlessRN
   : new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(LINKING_ERROR);
-      },
-    }
-  );
+      {},
+      {
+        get() {
+          throw new Error(LINKING_ERROR);
+        },
+      }
+    );
 
 interface OtplessResultCallback {
   (result: any): void;
@@ -59,9 +61,9 @@ class OtplessHeadlessModule {
   async isWhatsappInstalledForAndroid(): Promise<boolean> {
     if (Platform.OS === 'android') {
       // Android-specific code
-      return await OtplessHeadlessRN.isWhatsappInstalled()
+      return await OtplessHeadlessRN.isWhatsappInstalled();
     } else {
-      return false
+      return false;
     }
   }
 
@@ -89,9 +91,25 @@ class OtplessHeadlessModule {
     }
     return false;
   }
-  
+
+  // Android only — OtplessBM (iOS) has no equivalent.
+  userAuthEvent(
+    event: OtplessAuthEvent,
+    providerType: OtplessProviderType,
+    fallback: boolean = false,
+    providerInfo: any = {} // `any` avoids Record<string,string> conflicts across RN versions
+  ) {
+    if (Platform.OS === 'android') {
+      // args reordered to match Kotlin bridge: (event, fallback, providerType, providerInfo)
+      OtplessHeadlessRN.userAuthEvent(
+        event,
+        fallback,
+        providerType,
+        providerInfo
+      );
+    }
+  }
 }
 
-
 export { OtplessHeadlessModule };
-export * from './models'
+export * from './models';

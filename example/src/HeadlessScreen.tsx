@@ -74,7 +74,7 @@ export default function HeadlessPage() {
         if (tid) {
             headlessRequest.tid = tid;
         }
-
+        headlessModule.userAuthEvent('AUTH_INITIATED', 'OTPLESS', false, null);
         headlessModule.start(headlessRequest);
     };
 
@@ -96,6 +96,8 @@ export default function HeadlessPage() {
                 ...prevForm,
                 otp: data.response.otp
             }));
+        } else if (data.responseType == "ONETAP") {
+            headlessModule.userAuthEvent('AUTH_SUCCESS', 'OTPLESS', false, null);
         }
     };
 
