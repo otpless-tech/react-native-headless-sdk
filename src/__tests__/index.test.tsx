@@ -1,25 +1,19 @@
-import { NativeModules, Platform } from 'react-native';
-import { OtplessHeadlessModule } from '../index';
-
-// Mock the native module
-const mockNativeModule = {
-  initialize: jest.fn(),
-  start: jest.fn(),
-  commitResponse: jest.fn(),
-  cleanup: jest.fn(),
-  isSdkReady: jest.fn(),
-  setDevLogging: jest.fn(),
-  isWhatsappInstalled: jest.fn(),
-  initTrueCaller: jest.fn(),
-  decimateAll: jest.fn(),
-  userAuthEvent: jest.fn(),
-  addListener: jest.fn(),
-  removeListeners: jest.fn(),
-};
-
 jest.mock('react-native', () => ({
   NativeModules: {
-    OtplessHeadlessRN: mockNativeModule,
+    OtplessHeadlessRN: {
+      initialize: jest.fn(),
+      start: jest.fn(),
+      commitResponse: jest.fn(),
+      cleanup: jest.fn(),
+      isSdkReady: jest.fn(),
+      setDevLogging: jest.fn(),
+      isWhatsappInstalled: jest.fn(),
+      initTrueCaller: jest.fn(),
+      decimateAll: jest.fn(),
+      userAuthEvent: jest.fn(),
+      addListener: jest.fn(),
+      removeListeners: jest.fn(),
+    },
   },
   NativeEventEmitter: jest.fn().mockImplementation(() => ({
     addListener: jest.fn(),
@@ -30,6 +24,12 @@ jest.mock('react-native', () => ({
     select: jest.fn((spec: any) => spec.android ?? spec.default),
   },
 }));
+
+import { NativeModules, Platform } from 'react-native';
+import { OtplessHeadlessModule } from '../index';
+
+// Get reference to mock for assertions
+const mockNativeModule = NativeModules.OtplessHeadlessRN as any;
 
 describe('OtplessHeadlessModule.userAuthEvent', () => {
   let module: OtplessHeadlessModule;

@@ -11,9 +11,12 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReadableType
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
+import com.otpless.v2.android.sdk.dto.AuthEvent
 import com.otpless.v2.android.sdk.dto.OtplessChannelType
+import com.otpless.v2.android.sdk.dto.ProviderType
 import com.otpless.v2.android.sdk.dto.OtplessRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.ResponseTypes
@@ -101,6 +104,42 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     }
     debugLog("init truecaller result: $result")
     promise.resolve(result)
+  }
+
+  @ReactMethod
+  fun userAuthEvent(event: String, fallback: Boolean, providerType: String, providerInfo: ReadableMap?) {
+    // Defensive enum parsing — unknown values log and return rather than crashing the bridge.
+    val authEvent = runCatching { AuthEvent.valueOf(event) }.getOrElse {
+      debugLog("userAuthEvent: unknown AuthEvent '$event', ignoring call")
+      return
+    }
+    val provider = runCatching { ProviderType.valueOf(providerType) }.getOrElse {
+      debugLog("userAuthEvent: unknown ProviderType '$providerType', ignoring call")
+      return
+    }
+    // Defensive providerInfo parsing — JS passes `any`, so coerce each value to String:
+    // primitives via toString(), Maps/Arrays via JSON serialisation, Null skipped.
+    val infoMap = mutableMapOf<String, String>()
+    if (providerInfo != null) {
+      try {
+        val iterator = providerInfo.keySetIterator()
+        while (iterator.hasNextKey()) {
+          val key = iterator.nextKey() ?: continue
+          val value: String? = when (providerInfo.getType(key)) {
+            ReadableType.String -> providerInfo.getString(key)
+            ReadableType.Number -> providerInfo.getDouble(key).toString()
+            ReadableType.Boolean -> providerInfo.getBoolean(key).toString()
+            ReadableType.Map -> convertMapToJson(providerInfo.getMap(key))?.toString()
+            ReadableType.Array -> convertArrayToJson(providerInfo.getArray(key))?.toString()
+            else -> null  // Null — skip
+          }
+          if (value != null) infoMap[key] = value
+        }
+      } catch (_: Exception) {
+        // swallow any unexpected bridge parsing errors
+      }
+    }
+    OtplessSDK.userAuthEvent(authEvent, fallback, provider, infoMap)
   }
 
   @ReactMethod
