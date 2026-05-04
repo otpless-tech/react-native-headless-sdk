@@ -1,5 +1,5 @@
 import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
-import type { OtplessTruecallerRequest } from './models';
+import type { OtplessTruecallerRequest, OtplessAuthEvent, OtplessProviderType } from './models';
 
 
 
@@ -89,7 +89,19 @@ class OtplessHeadlessModule {
     }
     return false;
   }
-  
+
+  // Android only — OtplessBM (iOS) has no equivalent.
+  userAuthEvent(
+    event: OtplessAuthEvent,
+    providerType: OtplessProviderType,
+    fallback: boolean = false,
+    providerInfo: any = {}
+  ) {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.userAuthEvent(event, fallback, providerType, providerInfo);
+    }
+  }
+
 }
 
 
