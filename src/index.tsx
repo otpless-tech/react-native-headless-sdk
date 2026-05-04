@@ -95,9 +95,10 @@ class OtplessHeadlessModule {
     event: OtplessAuthEvent,
     providerType: OtplessProviderType,
     fallback: boolean = false,
-    providerInfo: any = {}
+    providerInfo: any = {} // `any` avoids Record<string,string> conflicts across RN versions
   ) {
     if (Platform.OS === 'android') {
+      // args reordered to match Kotlin bridge: (event, fallback, providerType, providerInfo)
       OtplessHeadlessRN.userAuthEvent(event, fallback, providerType, providerInfo);
     }
   }
