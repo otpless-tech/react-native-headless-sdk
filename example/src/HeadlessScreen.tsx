@@ -21,7 +21,6 @@ export default function HeadlessPage() {
     const APP_ID = "YOUR_APP_ID";
 
     useEffect(() => {
-
         headlessModule.initialize(APP_ID)
         headlessModule.setDevLogging(true)
         headlessModule.setResponseCallback(onHeadlessResult);
