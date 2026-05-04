@@ -39,6 +39,11 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
     module = new OtplessHeadlessModule();
   });
 
+  afterEach(() => {
+    const RNPlatform = require('react-native').Platform;
+    RNPlatform.OS = 'android';
+  });
+
   it('calls native userAuthEvent on Android with all arguments', () => {
     module.userAuthEvent('AUTH_SUCCESS', 'OTPLESS', true, { userId: 'abc123' });
 
@@ -92,8 +97,5 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
     module.userAuthEvent('AUTH_SUCCESS', 'CLIENT');
 
     expect(mockNativeModule.userAuthEvent).not.toHaveBeenCalled();
-
-    // restore
-    RNPlatform.OS = 'android';
   });
 });
