@@ -139,6 +139,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         // swallow any unexpected bridge parsing errors
       }
     }
+    debugLog("pushing the user auth event\nauthEvent: $authEvent, providerType: $providerType")
     OtplessSDK.userAuthEvent(authEvent, fallback, provider, infoMap)
   }
 
