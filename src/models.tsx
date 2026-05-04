@@ -88,3 +88,7 @@ export type OTCtaText =
     | 'cta_text_continue'
     | 'cta_text_accept'
     | 'cta_text_confirm';
+
+export type OtplessAuthEvent = 'AUTH_INITIATED' | 'AUTH_SUCCESS' | 'AUTH_FAILED';
+
+export type OtplessProviderType = 'CLIENT' | 'OTPLESS';
