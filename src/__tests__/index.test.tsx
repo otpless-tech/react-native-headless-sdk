@@ -40,8 +40,7 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
   });
 
   afterEach(() => {
-    const RNPlatform = require('react-native').Platform;
-    RNPlatform.OS = 'android';
+    Platform.OS = 'android';
   });
 
   it('calls native userAuthEvent on Android with all arguments', () => {
@@ -91,8 +90,7 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
   });
 
   it('does not call native userAuthEvent on iOS', () => {
-    const RNPlatform = require('react-native').Platform;
-    RNPlatform.OS = 'ios';
+    Platform.OS = 'ios';
 
     module.userAuthEvent('AUTH_SUCCESS', 'CLIENT');
 
