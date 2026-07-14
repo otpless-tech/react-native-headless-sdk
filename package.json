@@ -91,7 +91,15 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
-    ]
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 24,
+        "branches": 33.33,
+        "functions": 14.28,
+        "lines": 24
+      }
+    }
   },
   "commitlint": {
     "extends": [
