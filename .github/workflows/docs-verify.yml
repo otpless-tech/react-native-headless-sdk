@@ -1,0 +1,45 @@
+name: Docs Verify
+
+# Mechanical (non-LLM) fact-check between docs/SDK-GUIDE.md / CHANGELOG.md /
+# the gate definition and the actual repo files: guide-declared package
+# version and native pins vs. package.json/android/build.gradle/the podspec,
+# CHANGELOG heading + released-history integrity, and gate-composition drift
+# across CLAUDE.md / the verify skill / build-test.yml. Pure grep/sed, no
+# node, no network — see scripts/docs-verify.sh. This is the deterministic
+# backstop for the LLM-driven docs-sync workflow: that can hallucinate an
+# "all good" summary, this cannot.
+#
+# This workflow never pushes commits.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "CHANGELOG.md"
+      - "src/**"
+      - "android/**"
+      - "ios/**"
+      - "package.json"
+      - "otpless-headless-rn.podspec"
+      - "Makefile"
+      - ".claude/skills/**"
+  workflow_dispatch:
+
+concurrency:
+  group: docs-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (full history so origin/main is diffable)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Run mechanical doc-fact checks
+        run: bash scripts/docs-verify.sh
