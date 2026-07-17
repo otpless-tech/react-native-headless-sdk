@@ -86,6 +86,11 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       Otpless.shared.setLoggerDelegate(self)
     }
   }
+
+  @objc(setMfaEnabled:)
+  func setMfaEnabled(enabled: Bool) {
+    Otpless.shared.setMfaEnabled(enabled)
+  }
   
   private func authEventFromString(_ name: String) -> AuthEvent? {
     switch name {

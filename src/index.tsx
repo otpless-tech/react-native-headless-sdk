@@ -82,6 +82,10 @@ class OtplessHeadlessModule {
     OtplessHeadlessRN.setDevLogging(enable);
   }
 
+  setMfaEnabled(enabled: boolean) {
+    OtplessHeadlessRN.setMfaEnabled(enabled);
+  }
+
   async isSdkReady(): Promise<boolean> {
     return await OtplessHeadlessRN.isSdkReady();
   }

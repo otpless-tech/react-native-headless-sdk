@@ -227,6 +227,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     OtplessSDK.devLogging = devLogging
   }
 
+  @ReactMethod
+  fun setMfaEnabled(enabled: Boolean) {
+    OtplessSDK.isMfaEnabled = enabled
+  }
+
   companion object {
     const val NAME = "OtplessHeadlessRN"
   }

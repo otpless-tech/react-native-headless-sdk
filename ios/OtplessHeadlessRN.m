@@ -30,5 +30,7 @@ RCT_EXTERN_METHOD(userAuthEvent:(NSString *)event
 
 RCT_EXTERN_METHOD(isSdkReady: (RCTPromiseResolveBlock*)resolve reject: (RCTPromiseRejectBlock*)reject)
 
+RCT_EXTERN_METHOD(setMfaEnabled:(BOOL)enabled)
+
 @end
 
