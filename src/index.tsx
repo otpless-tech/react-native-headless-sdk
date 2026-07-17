@@ -4,6 +4,7 @@ import type {
   OtplessAuthEvent,
   OtplessProviderType,
   OtplessRequestInput,
+  OtplessDeviceFingerprintMode,
 } from './models';
 
 const LINKING_ERROR =
@@ -84,6 +85,10 @@ class OtplessHeadlessModule {
 
   setMfaEnabled(enabled: boolean) {
     OtplessHeadlessRN.setMfaEnabled(enabled);
+  }
+
+  setDeviceFingerprintMode(mode: OtplessDeviceFingerprintMode) {
+    OtplessHeadlessRN.setDeviceFingerprintMode(mode);
   }
 
   async isSdkReady(): Promise<boolean> {

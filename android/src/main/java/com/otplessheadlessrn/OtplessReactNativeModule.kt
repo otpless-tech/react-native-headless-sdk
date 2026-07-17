@@ -15,6 +15,7 @@ import com.facebook.react.bridge.ReadableType
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
 import com.otpless.v2.android.sdk.dto.AuthEvent
+import com.otpless.v2.android.sdk.dto.DeviceFingerprintMode
 import com.otpless.v2.android.sdk.dto.OtplessChannelType
 import com.otpless.v2.android.sdk.dto.ProviderType
 import com.otpless.v2.android.sdk.dto.OtplessRequest
@@ -33,6 +34,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
   private var otplessJob: Job? = null
+  private var deviceFingerprintMode: DeviceFingerprintMode = DeviceFingerprintMode.NONE
 
   init {
     reactContext.addActivityEventListener(this)
@@ -194,6 +196,8 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
       otplessRequest.setTemplateId(templateId)
     }
 
+    otplessRequest.deviceFingerprintMode = deviceFingerprintMode
+
     otplessJob?.cancel()
     currentActivity?.let {
       if (isOtpPresent) (it as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
@@ -230,6 +234,13 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   @ReactMethod
   fun setMfaEnabled(enabled: Boolean) {
     OtplessSDK.isMfaEnabled = enabled
+  }
+
+  @ReactMethod
+  fun setDeviceFingerprintMode(mode: String) {
+    runCatching { DeviceFingerprintMode.valueOf(mode) }.getOrNull()?.let {
+      deviceFingerprintMode = it
+    }
   }
 
   companion object {

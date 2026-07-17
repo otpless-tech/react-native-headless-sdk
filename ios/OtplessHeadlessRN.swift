@@ -91,6 +91,21 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   func setMfaEnabled(enabled: Bool) {
     Otpless.shared.setMfaEnabled(enabled)
   }
+
+  private func fingerprintModeFromString(_ name: String) -> DeviceFingerprintMode? {
+    switch name {
+    case "NONE":  return .NONE
+    case "ASYNC": return .ASYNC
+    case "SYNC":  return .SYNC
+    default:      return nil
+    }
+  }
+
+  @objc(setDeviceFingerprintMode:)
+  func setDeviceFingerprintMode(mode: String) {
+    guard let m = fingerprintModeFromString(mode) else { return }
+    Otpless.shared.setDeviceFingerprintMode(m)
+  }
   
   private func authEventFromString(_ name: String) -> AuthEvent? {
     switch name {
