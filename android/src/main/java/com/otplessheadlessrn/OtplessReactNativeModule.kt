@@ -23,6 +23,7 @@ import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.ResponseTypes
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
+import com.otpless.v2.android.sdk.view.models.OtplessAuthConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -240,6 +241,33 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   fun setDeviceFingerprintMode(mode: String) {
     runCatching { DeviceFingerprintMode.valueOf(mode) }.getOrNull()?.let {
       deviceFingerprintMode = it
+    }
+  }
+
+  @ReactMethod
+  fun startOneTap(config: ReadableMap, promise: Promise) {
+    val isForeground = if (config.hasKey("isForeground")) config.getBoolean("isForeground") else true
+    val otp = config.getString("otp") ?: ""
+    val tid = config.getString("tid")
+    val authConfig = OtplessAuthConfig(
+      isForeground = isForeground,
+      otp = otp,
+      tid = tid,
+      deviceFingerprintMode = deviceFingerprintMode
+    )
+    val activity = currentActivity
+    if (activity == null) {
+      promise.resolve(false)
+      return
+    }
+    (activity as? AppCompatActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
+      val result = OtplessSDK.start(authConfig)
+      promise.resolve(result)
+    } ?: run {
+      CoroutineScope(Dispatchers.IO).launch {
+        val result = OtplessSDK.start(authConfig)
+        promise.resolve(result)
+      }
     }
   }
 

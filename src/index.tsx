@@ -5,6 +5,7 @@ import type {
   OtplessProviderType,
   OtplessRequestInput,
   OtplessDeviceFingerprintMode,
+  OtplessOneTapConfig,
 } from './models';
 
 const LINKING_ERROR =
@@ -89,6 +90,10 @@ class OtplessHeadlessModule {
 
   setDeviceFingerprintMode(mode: OtplessDeviceFingerprintMode) {
     OtplessHeadlessRN.setDeviceFingerprintMode(mode);
+  }
+
+  async startOneTap(config: OtplessOneTapConfig): Promise<boolean> {
+    return await OtplessHeadlessRN.startOneTap(config);
   }
 
   async isSdkReady(): Promise<boolean> {

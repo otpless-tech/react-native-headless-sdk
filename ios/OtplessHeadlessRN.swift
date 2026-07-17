@@ -106,6 +106,26 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     guard let m = fingerprintModeFromString(mode) else { return }
     Otpless.shared.setDeviceFingerprintMode(m)
   }
+
+  @objc(startOneTap:resolver:rejecter:)
+  func startOneTap(config: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    let isForeground = (config["isForeground"] as? Bool) ?? true
+    let otp = config["otp"] as? String
+    let tid = config["tid"] as? String
+    let authConfig = OtplessAuthCofig(isForeground: isForeground, otp: otp, tid: tid)
+    DispatchQueue.main.async {
+      let rvc = UIApplication.shared.delegate?.window??.rootViewController
+        ?? self.getRootViewControllerFromWindowScene()
+      guard let vc = rvc else {
+        resolve(false)
+        return
+      }
+      Task(priority: .userInitiated) {
+        let result = await Otpless.shared.startAuth(parent: vc, config: authConfig)
+        resolve(result)
+      }
+    }
+  }
   
   private func authEventFromString(_ name: String) -> AuthEvent? {
     switch name {
