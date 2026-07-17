@@ -98,19 +98,16 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   func initialize(appId: String, loginUri: String?) {
     DispatchQueue.main.async {
       let rootViewController = UIApplication.shared.delegate?.window??.rootViewController
-      if rootViewController != nil {
+      if let rvc = rootViewController {
         Otpless.shared.setResponseDelegate(self)
-        Otpless.shared.initialise(withAppId: appId, vc: rootViewController!)
+        Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: rvc)
         return
       }
-      
-      // Could not get an instance of RootViewController. Try to get RootViewController from `windowScene`.
+
       if #available(iOS 13.0, *) {
-        let windowSceneVC = self.getRootViewControllerFromWindowScene()
-        if windowSceneVC != nil {
+        if let windowSceneVC = self.getRootViewControllerFromWindowScene() {
           Otpless.shared.setResponseDelegate(self)
-          Otpless.shared.initialise(withAppId: appId, vc: rootViewController!)
-          return
+          Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: windowSceneVC)
         }
       }
     }
