@@ -3,6 +3,7 @@ import type {
   OtplessTruecallerRequest,
   OtplessAuthEvent,
   OtplessProviderType,
+  OtplessRequestInput,
 } from './models';
 
 const LINKING_ERROR =
@@ -49,7 +50,7 @@ class OtplessHeadlessModule {
     this.eventEmitter?.addListener('OTPlessEventResult', callback);
   }
 
-  start(input: any) {
+  start(input: OtplessRequestInput) {
     OtplessHeadlessRN.start(input);
   }
 

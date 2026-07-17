@@ -175,6 +175,9 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         )
       }
     }
+    data.getString("requestId")?.takeIf { it.isNotBlank() }?.let {
+      otplessRequest.requestId = it
+    }
     data.getString("expiry")?.takeIf { it.isNotBlank() }?.let {
       otplessRequest.setExpiry(it)
     }

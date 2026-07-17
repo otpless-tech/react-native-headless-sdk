@@ -41,6 +41,8 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       otplessRequest.set(email: email)
     } else if let channelType = args["channelType"] as? String {
       otplessRequest.set(channelType: OtplessChannelType.fromString(channelType))
+    } else if let requestId = args["requestId"] as? String, !requestId.isEmpty {
+      otplessRequest.set(fromBackend: requestId)
     }
     if let otp = args["otp"] as? String {
       otplessRequest.set(otp: otp)
@@ -57,12 +59,12 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
        !otpLength.isEmpty {
       otplessRequest.set(otpLength: otpLength)
     }
-    
+
     if let tid = args["tid"] as? String,
        !tid.isEmpty {
       otplessRequest.set(tid: tid)
     }
-    
+
     return otplessRequest
   }
   
