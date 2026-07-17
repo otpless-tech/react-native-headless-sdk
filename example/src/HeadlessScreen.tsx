@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Clipboard } from 'react-native';
-import { OtplessHeadlessModule } from 'otpless-headless-rn';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+  Clipboard,
+  Platform,
+  Switch,
+} from 'react-native';
+import {
+  OtplessHeadlessModule,
+  type OtplessDeviceFingerprintMode,
+  type OtplessRequestInput,
+  type OtplessChannelType,
+} from 'otpless-headless-rn';
 
 const headlessModule = new OtplessHeadlessModule();
 
@@ -18,7 +33,9 @@ export default function HeadlessPage() {
         deliveryChannel: '',
         tid: '',
     });
-    const APP_ID = "YOUR_APP_ID";
+    const [mfaEnabled, setMfaEnabled] = useState(false);
+    const [fingerprintMode, setFingerprintMode] = useState<OtplessDeviceFingerprintMode>('NONE');
+    const APP_ID = "7V9HL0G6S9QR122H3UXN";
 
     useEffect(() => {
         headlessModule.initialize(APP_ID)
@@ -111,6 +128,56 @@ export default function HeadlessPage() {
         headlessModule.initialize(APP_ID);
         headlessModule.setResponseCallback(onHeadlessResult);
     }
+
+    const buildRequest = (): OtplessRequestInput => {
+        const { phoneNumber, countryCode, otp, channelType, email, expiry, otpLength, deliveryChannel, tid } = form;
+        const req: OtplessRequestInput = {};
+        if (phoneNumber) {
+            req.phone = phoneNumber;
+            req.countryCode = countryCode;
+        } else if (email) {
+            req.email = email;
+        } else if (channelType) {
+            req.channelType = channelType as OtplessChannelType;
+        }
+        if (otp) req.otp = otp;
+        if (expiry) req.expiry = expiry;
+        if (otpLength) req.otpLength = otpLength;
+        if (deliveryChannel) req.deliveryChannel = deliveryChannel;
+        if (tid) req.tid = tid;
+        return req;
+    };
+
+    const onStartOneTap = async () => {
+        const ok = await headlessModule.startOneTap({ isForeground: true, otp: form.otp, tid: form.tid });
+        setResult((prev) => (prev ? `startOneTap -> ${ok}\n\n${prev}` : `startOneTap -> ${ok}`));
+    };
+
+    const onStartInBackground = () => {
+        headlessModule.startInBackground(buildRequest());
+    };
+
+    const onCheckSimBinding = async () => {
+        const bound = await headlessModule.checkSimBindingStatus();
+        setResult((prev) => (prev ? `simBindingStatus -> ${bound}\n\n${prev}` : `simBindingStatus -> ${bound}`));
+    };
+
+    const onClearSimBinding = async () => {
+        await headlessModule.clearSimBinding();
+        setResult((prev) => (prev ? `simBindingCleared\n\n${prev}` : 'simBindingCleared'));
+    };
+
+    const onToggleMfa = (v: boolean) => {
+        setMfaEnabled(v);
+        headlessModule.setMfaEnabled(v);
+    };
+
+    const onCycleFingerprint = () => {
+        const next: OtplessDeviceFingerprintMode =
+            fingerprintMode === 'NONE' ? 'ASYNC' : fingerprintMode === 'ASYNC' ? 'SYNC' : 'NONE';
+        setFingerprintMode(next);
+        headlessModule.setDeviceFingerprintMode(next);
+    };
 
     return (
         <ScrollView >
@@ -206,6 +273,38 @@ export default function HeadlessPage() {
             <TouchableOpacity style={styles.primaryButton} onPress={cleanupAndReinitialize}>
                 <Text style={styles.buttonText}>Cleanup & Re initialize</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={onStartOneTap}>
+                <Text style={styles.buttonText}>Start OneTap</Text>
+            </TouchableOpacity>
+
+            <View style={styles.row}>
+                <Text style={{ marginHorizontal: 10, color: '#333', fontSize: 16 }}>MFA</Text>
+                <Switch value={mfaEnabled} onValueChange={onToggleMfa} />
+                <TouchableOpacity style={[styles.primaryButton, { flex: 1 }]} onPress={onCycleFingerprint}>
+                    <Text style={styles.buttonText}>Fingerprint: {fingerprintMode}</Text>
+                </TouchableOpacity>
+            </View>
+
+            {Platform.OS === 'android' && (
+                <>
+                    <TouchableOpacity style={styles.primaryButton} onPress={onStartInBackground}>
+                        <Text style={styles.buttonText}>Start In Background (Android)</Text>
+                    </TouchableOpacity>
+                    <View style={styles.row}>
+                        <TouchableOpacity style={[styles.primaryButton, { flex: 1 }]} onPress={onCheckSimBinding}>
+                            <Text style={styles.buttonText}>Check SIM Binding</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.primaryButton, { flex: 1 }]} onPress={onClearSimBinding}>
+                            <Text style={styles.buttonText}>Clear SIM Binding</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={{ marginHorizontal: 10, color: '#333', fontSize: 16 }}>SIM Binding Enabled</Text>
+                        <Switch onValueChange={(v) => headlessModule.setSimBindingEnabled(v)} />
+                    </View>
+                </>
+            )}
 
             <Text style={styles.resultText}>{result}</Text>
         </ScrollView>
