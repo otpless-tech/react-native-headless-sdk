@@ -96,6 +96,12 @@ class OtplessHeadlessModule {
     return await OtplessHeadlessRN.startOneTap(config);
   }
 
+  startInBackground(input: OtplessRequestInput) {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.startInBackground(input);
+    }
+  }
+
   async isSdkReady(): Promise<boolean> {
     return await OtplessHeadlessRN.isSdkReady();
   }

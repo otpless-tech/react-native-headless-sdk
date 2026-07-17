@@ -245,6 +245,46 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
+  fun startInBackground(data: ReadableMap) {
+    val otplessRequest = OtplessRequest()
+    val phone = data.getString("phone") ?: ""
+    if (phone.isNotEmpty()) {
+      val countryCode = data.getString("countryCode") ?: ""
+      otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
+      data.getString("otp")?.let { otplessRequest.setOtp(it) }
+    } else {
+      val email = data.getString("email") ?: ""
+      if (email.isNotEmpty()) {
+        otplessRequest.setEmail(email)
+        data.getString("otp")?.let { otplessRequest.setOtp(it) }
+      } else {
+        otplessRequest.setChannelType(
+          OtplessChannelType.fromString(data.getString("channelType") ?: "")
+        )
+      }
+    }
+    data.getString("requestId")?.takeIf { it.isNotBlank() }?.let { otplessRequest.requestId = it }
+    data.getString("expiry")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setExpiry(it) }
+    data.getString("otpLength")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setOtpLength(it) }
+    data.getString("deliveryChannel")?.takeIf { it.isNotBlank() }?.let {
+      otplessRequest.setDeliveryChannel(it.uppercase())
+    }
+    data.getString("tid")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setTemplateId(it) }
+    otplessRequest.deviceFingerprintMode = deviceFingerprintMode
+
+    otplessJob?.cancel()
+    currentActivity?.let { activity ->
+      otplessJob = (activity as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
+        OtplessSDK.startInBackground(otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
+    } ?: run {
+      CoroutineScope(Dispatchers.IO).launch {
+        OtplessSDK.startInBackground(otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
+    }
+  }
+
+  @ReactMethod
   fun startOneTap(config: ReadableMap, promise: Promise) {
     val isForeground = if (config.hasKey("isForeground")) config.getBoolean("isForeground") else true
     val otp = config.getString("otp") ?: ""
