@@ -245,6 +245,35 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
+  fun setSimBindingEnabled(enabled: Boolean) {
+    OtplessSDK.isSimBindingEnabled = enabled
+  }
+
+  @ReactMethod
+  fun checkSimBindingStatus(promise: Promise) {
+    CoroutineScope(Dispatchers.IO).launch {
+      try {
+        val bound = OtplessSDK.checkSimBindingStatus(reactContext.applicationContext)
+        promise.resolve(bound)
+      } catch (_: Throwable) {
+        promise.resolve(false)
+      }
+    }
+  }
+
+  @ReactMethod
+  fun clearSimBinding(promise: Promise) {
+    CoroutineScope(Dispatchers.IO).launch {
+      try {
+        OtplessSDK.clearSimBinding(reactContext.applicationContext)
+        promise.resolve(null)
+      } catch (_: Throwable) {
+        promise.resolve(null)
+      }
+    }
+  }
+
+  @ReactMethod
   fun startInBackground(data: ReadableMap) {
     val otplessRequest = OtplessRequest()
     val phone = data.getString("phone") ?: ""

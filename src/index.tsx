@@ -102,6 +102,25 @@ class OtplessHeadlessModule {
     }
   }
 
+  setSimBindingEnabled(enabled: boolean) {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.setSimBindingEnabled(enabled);
+    }
+  }
+
+  async checkSimBindingStatus(): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      return await OtplessHeadlessRN.checkSimBindingStatus();
+    }
+    return false;
+  }
+
+  async clearSimBinding(): Promise<void> {
+    if (Platform.OS === 'android') {
+      await OtplessHeadlessRN.clearSimBinding();
+    }
+  }
+
   async isSdkReady(): Promise<boolean> {
     return await OtplessHeadlessRN.isSdkReady();
   }
