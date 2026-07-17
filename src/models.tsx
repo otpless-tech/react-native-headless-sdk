@@ -92,3 +92,50 @@ export type OTCtaText =
 export type OtplessAuthEvent = 'AUTH_INITIATED' | 'AUTH_SUCCESS' | 'AUTH_FAILED';
 
 export type OtplessProviderType = 'CLIENT' | 'OTPLESS';
+
+export interface OtplessRequestInput {
+  phone?: string;
+  /** Required together with `phone`. */
+  countryCode?: string;
+  email?: string;
+  channelType?: OtplessChannelType;
+  otp?: string;
+  expiry?: string;
+  otpLength?: string;
+  deliveryChannel?: string;
+  tid?: string;
+  /** Backend-generated or WebAuthn request ID. */
+  requestId?: string;
+}
+
+export interface OtplessOneTapConfig {
+  /** Defaults to `true` — presents the OneTap bottom sheet. `false` runs in background when possible. */
+  isForeground?: boolean;
+  otp?: string;
+  tid?: string;
+}
+
+export type OtplessChannelType =
+  | 'WHATSAPP'
+  | 'GOOGLE_SDK'
+  | 'FACEBOOK_SDK'
+  | 'APPLE'
+  | 'APPLE_SDK'
+  | 'GMAIL'
+  | 'TWITTER'
+  | 'DISCORD'
+  | 'SLACK'
+  | 'FACEBOOK'
+  | 'LINKEDIN'
+  | 'MICROSOFT'
+  | 'LINE'
+  | 'LINEAR'
+  | 'NOTION'
+  | 'TWITCH'
+  | 'GITHUB'
+  | 'BITBUCKET'
+  | 'ATLASSIAN'
+  | 'GITLAB'
+  | 'TRUE_CALLER';
+
+export type OtplessDeviceFingerprintMode = 'NONE' | 'ASYNC' | 'SYNC';
