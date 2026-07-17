@@ -85,6 +85,48 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     }
   }
   
+  private func authEventFromString(_ name: String) -> AuthEvent? {
+    switch name {
+    case "AUTH_INITIATED": return .AUTH_INITIATED
+    case "AUTH_SUCCESS":   return .AUTH_SUCCESS
+    case "AUTH_FAILED":    return .AUTH_FAILED
+    default:               return nil
+    }
+  }
+
+  private func providerTypeFromString(_ name: String) -> ProviderType? {
+    switch name {
+    case "CLIENT":  return .CLIENT
+    case "OTPLESS": return .OTPLESS
+    default:        return nil
+    }
+  }
+
+  @objc(userAuthEvent:fallback:providerType:providerInfo:)
+  func userAuthEvent(event: String, fallback: Bool, providerType: String, providerInfo: [String: Any]?) {
+    guard let authEvent = authEventFromString(event) else { return }
+    guard let provider = providerTypeFromString(providerType) else { return }
+    var info: [String: String] = [:]
+    if let raw = providerInfo {
+      for (key, value) in raw {
+        if let s = value as? String {
+          info[key] = s
+        } else if let n = value as? NSNumber {
+          info[key] = n.stringValue
+        } else if let arr = value as? [Any],
+                  let data = try? JSONSerialization.data(withJSONObject: arr),
+                  let s = String(data: data, encoding: .utf8) {
+          info[key] = s
+        } else if let dict = value as? [String: Any],
+                  let data = try? JSONSerialization.data(withJSONObject: dict),
+                  let s = String(data: data, encoding: .utf8) {
+          info[key] = s
+        }
+      }
+    }
+    Otpless.shared.userAuthEvent(event: authEvent, fallback: fallback, providerType: provider, providerInfo: info)
+  }
+
   override func supportedEvents() -> [String]! {
     return ["OTPlessEventResult"]
   }

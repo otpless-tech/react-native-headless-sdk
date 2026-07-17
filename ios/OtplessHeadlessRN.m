@@ -23,6 +23,11 @@ RCT_EXTERN_METHOD(authorizeViaPasskey: (NSDictionary *)request)
 
 RCT_EXTERN_METHOD(setDevLogging:(BOOL)enable)
 
+RCT_EXTERN_METHOD(userAuthEvent:(NSString *)event
+                  fallback:(BOOL)fallback
+                  providerType:(NSString *)providerType
+                  providerInfo:(nullable NSDictionary *)providerInfo)
+
 RCT_EXTERN_METHOD(isSdkReady: (RCTPromiseResolveBlock*)resolve reject: (RCTPromiseRejectBlock*)reject)
 
 @end

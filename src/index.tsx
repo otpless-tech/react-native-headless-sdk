@@ -92,22 +92,13 @@ class OtplessHeadlessModule {
     return false;
   }
 
-  // Android only — OtplessBM (iOS) has no equivalent.
   userAuthEvent(
     event: OtplessAuthEvent,
     providerType: OtplessProviderType,
     fallback: boolean = false,
-    providerInfo: any = {} // `any` avoids Record<string,string> conflicts across RN versions
+    providerInfo: any = {}
   ) {
-    if (Platform.OS === 'android') {
-      // args reordered to match Kotlin bridge: (event, fallback, providerType, providerInfo)
-      OtplessHeadlessRN.userAuthEvent(
-        event,
-        fallback,
-        providerType,
-        providerInfo
-      );
-    }
+    OtplessHeadlessRN.userAuthEvent(event, fallback, providerType, providerInfo);
   }
 }
 
