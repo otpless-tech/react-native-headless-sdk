@@ -48,7 +48,7 @@ means:
   before flagging it as bloat.
 - **`android/` and `ios/` ship as source** (Kotlin/Swift/Obj-C/Gradle files, `.xcodeproj`) — there
   is no shrinking step for the bridge itself (Android's own `minifyEnabled false`, per
-  `docs/SDK-GUIDE.md` §3); the bridge module is not R8-minified. Size discipline here means "don't
+  `android/build.gradle`); the bridge module is not R8-minified. Size discipline here means "don't
   add unnecessary native files," not "shrink the build output."
 
 ## 3. New dependency checklist

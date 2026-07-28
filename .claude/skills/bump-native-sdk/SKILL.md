@@ -40,10 +40,10 @@ Process:
    grep -rn "OtplessSDK\.\|com\.otpless\.v2\.android\.sdk\.\|com\.otpless\.longclaw\.tc\." \
      android/src/main/java/com/otplessheadlessrn/
    ```
-   `docs/SDK-GUIDE.md` §5's bridge method table is the authoritative list of exactly which native
-   calls this bridge makes — cross-check every row against the diff.
+   The Android bridge method table on this repo's Atlas page is the authoritative list of exactly
+   which native calls this bridge makes — cross-check every row against the diff.
 4. For every symbol **added**, check whether it's a new capability worth exposing at the JS layer
-   (see §8 of the guide — the channel-coverage gap table). Adding JS reachability for a previously
+   (see the channel-coverage gap table on the Atlas page). Adding JS reachability for a previously
    unreached capability is a separate, deliberate decision (new bridge method + TS export), not an
    automatic side effect of the pin bump — don't bundle the two unless the PR says so explicitly.
 5. Update `android/build.gradle:77`'s version string.
@@ -51,7 +51,9 @@ Process:
 7. **Hand-verify or state you couldn't:** if an Android toolchain is available, build/run the
    example app against the new pin; if not, say so plainly in the PR rather than implying it was
    checked.
-8. Update `docs/SDK-GUIDE.md` §3 (the pin table) and §5/§8 if the surface changed those tables.
+8. Update this repo's Atlas page: the native-pin table, plus the Android bridge method table and
+   channel-coverage table if the surface changed them (a PR to `otpless-tech/atlas`, unless the page
+   is generated — see **docs-sync**).
 
 ## B. iOS (`otpless-headless-rn.podspec:20`, `OtplessBM/Core`)
 
@@ -70,7 +72,9 @@ current process:
 4. Run `make gate` (again: proves nothing about the native side).
 5. **Hand-verify or state you couldn't:** if a macOS/Xcode toolchain is available, `pod install` +
    build the example app against the new pin; if not, say so plainly.
-6. Update `docs/SDK-GUIDE.md` §3 (the pin table) and §6/§8 if the surface changed those tables.
+6. Update this repo's Atlas page: the native-pin table, plus the iOS bridge method table and
+   channel-coverage table if the surface changed them (a PR to `otpless-tech/atlas`, unless the page
+   is generated — see **docs-sync**).
 
 ## C. Symbol-level risk enumeration (both platforms)
 
@@ -86,7 +90,7 @@ new pin vs. which you're relying on release-notes-says-nothing-changed:
 - iOS: `initialize`, `start`, `commitResponse`, `cleanup`, `decimateAll`, `setDevLogging`,
   `isSdkReady`, `authorizeViaPasskey` (unreached from JS today, but still a live selector — a
   break here is silent until someone wires it up), plus the two already-undead selectors
-  (`setOneTapDataCallback`, `performOneTap` — guide §10 quirk #2) which cannot regress further
+  (`setOneTapDataCallback`, `performOneTap` — a known quirk on the Atlas page) which cannot regress further
   since nothing implements them today, but confirm the new pod version doesn't add a real
   implementation expectation that changes that story.
 

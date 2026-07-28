@@ -4,7 +4,7 @@ import envelopeShape from './__fixtures__/contract/envelope_shape.json';
 // src/__tests__/__fixtures__/contract/README.md for the honest scope. It does NOT exercise the
 // real Android (Kotlin) or iOS (Swift) marshalling code, which Jest cannot run.
 describe('response envelope contract fixture', () => {
-  it('has exactly the three keys SDK-GUIDE.md §7 documents as the verbatim envelope', () => {
+  it('has exactly the three keys documented as the verbatim envelope', () => {
     expect(Object.keys(envelopeShape).sort()).toEqual([
       'response',
       'responseType',

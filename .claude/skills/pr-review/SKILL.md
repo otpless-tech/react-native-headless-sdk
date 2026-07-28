@@ -53,7 +53,7 @@ relevant to it (say so, don't stay silent).
 
 - Does the diff add ANY logging, network call, or field collection at the **bridge layer itself**
   (not just forwarding a merchant-supplied field into the native SDK's own request object)? If so:
-  is it documented in `CLAUDE.md` article 3 and `docs/SDK-GUIDE.md` in this same PR? No doc update
+  is it documented in `CLAUDE.md` article 3 and on this repo's Atlas page in this same PR? No doc update
   = blocking finding, not a nit — this repo's constitution currently states the bridge collects
   nothing of its own, and that claim must stay true or be corrected loudly.
 - Any new/changed log statement (`debugLog`, the iOS `OtplessLoggerDelegate` print, or a raw
@@ -87,18 +87,18 @@ relevant to it (say so, don't stay silent).
   proved a native change) is a blocking finding.
 - Was the Jest coverage ratchet respected (no unexplained lowering of
   `jest.coverageThreshold.global` to make a gate pass)?
-- If the response envelope or public TS surface moved: does the PR note an `otpless-rn-lite`
+- If the response envelope or public TS surface moved: does the PR note a `react-native-headless-lite`
   parity check (`Parity: ported in <repo>#NN` / `Parity: N/A — <reason>` / `Parity: port ticket
   <link>`)? Absence is a blocking finding for any breaking change.
 
-## Also check: does this PR silently reintroduce a known `docs/SDK-GUIDE.md` §10 quirk?
+## Also check: does this PR silently reintroduce a known quirk?
 
-Cross-check the diff against the guide's Known Quirks section before approving — e.g. a new
+Cross-check the diff against the Known Quirks section of this repo's Atlas page before approving — e.g. a new
 `ResponseTypes.valueOf(...)`-style direct parse (quirk #4's pattern), a new promise with an
 early-return-without-settling path (quirk #5's pattern), a new `.m` selector declaration with no
 corresponding `.swift` implementation (quirk #2's pattern), or a re-widened `packageManager`
 range (the toolchain fix this repo's scaffolding PR landed). Fixing a listed quirk is good and
-should be called out and removed from §10 in the same PR (docs-sync skill); *reintroducing* one is
+should be called out and removed from the Atlas page's quirks list in the same PR (docs-sync skill); *reintroducing* one is
 a blocking finding.
 
 ## Report format
@@ -109,7 +109,7 @@ a blocking finding.
   method has an early return that never resolves/rejects; repeats the initTrueCaller known bug.
 
 ### Should-fix
-- src/index.tsx:60 — new method not yet in docs/SDK-GUIDE.md §4.
+- src/index.tsx:60 — new method not yet on the Atlas page's public-API table.
 
 ### Nit
 - CHANGELOG.md — Unreleased entry missing for this PR.

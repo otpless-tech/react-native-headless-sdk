@@ -1,12 +1,16 @@
-.PHONY: install typecheck lint test ts-surface docs-verify gate clean
+.PHONY: install typecheck lint test ts-surface gate clean
 
 YARN := yarn
 
 # `gate` is the single source of truth for full verification of this repo —
 # CLAUDE.md, the verify skill, and .github/workflows/build-test.yml all
-# restate this same command list; scripts/docs-verify.sh check 6 fails if
-# they drift from what's declared here.
-gate: install typecheck lint test ts-surface docs-verify
+# restate this same command list.
+#
+# The gate is source-side only. Documentation freshness is deliberately NOT
+# checked here: platform docs live in otpless-tech/atlas, this repo has no
+# docs/ directory, and a local gate has no Atlas checkout to diff against.
+# That check runs as the `atlas-docs` workflow on every PR instead.
+gate: install typecheck lint test ts-surface
 	@echo "gate: all checks passed."
 
 install:
@@ -27,10 +31,6 @@ test:
 # Public TS surface golden — see scripts/check-ts-surface.sh.
 ts-surface:
 	bash scripts/check-ts-surface.sh
-
-# Mechanical (non-LLM) doc/changelog fact-check — see scripts/docs-verify.sh.
-docs-verify:
-	bash scripts/docs-verify.sh
 
 clean:
 	$(YARN) clean

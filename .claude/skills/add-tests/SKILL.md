@@ -23,7 +23,7 @@ implying otherwise.
 | File | Owns |
 |---|---|
 | `index.test.tsx` | `OtplessHeadlessModule.userAuthEvent` — the one method with real per-platform branching logic worth a decision table (Android calls native with reordered args, iOS never calls native at all) |
-| `contract.test.tsx` | Asserts `__fixtures__/contract/envelope_shape.json`'s key set matches the verbatim envelope documented in `docs/SDK-GUIDE.md` §7 — doc/fixture drift guard only, see `__fixtures__/contract/README.md` |
+| `contract.test.tsx` | Asserts `__fixtures__/contract/envelope_shape.json`'s key set matches the verbatim envelope documented on this repo's Atlas page — doc/fixture drift guard only, see `__fixtures__/contract/README.md` |
 
 Extend the matching existing file before creating a new one, unless you're covering a genuinely
 new method (create `<methodName>.test.tsx` or add a `describe` block to `index.test.tsx`).
@@ -92,7 +92,8 @@ with them.
 
 - **Changing the envelope shape (new/removed/renamed key) is a breaking contract change.** Update
   the fixture + `contract.test.tsx` in the same PR, and follow CLAUDE.md constitution article 1:
-  `**BREAKING:**` changelog entry, `docs/SDK-GUIDE.md` §7 update, `otpless-rn-lite` parity check.
+  `**BREAKING:**` changelog entry, an update to the marshalling section of this repo's Atlas page,
+  and a `react-native-headless-lite` parity check.
   Never edit the fixture just to make a test pass.
 - A `.claude/settings.json` hook blocks hand-edits to this directory in favor of updating both the
   fixture and its test deliberately together — the warning is the point, not an obstacle.

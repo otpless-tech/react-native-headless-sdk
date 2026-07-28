@@ -8,7 +8,7 @@
 #
 # `api/index.d.ts` + `api/models.d.ts` together ARE the complete public TS
 # surface (src/index.tsx re-exports everything from src/models.tsx, so those
-# two files are the whole story — see CLAUDE.md and docs/SDK-GUIDE.md §4).
+# two files are the whole story — see CLAUDE.md and this repo's Atlas page).
 #
 # Usage:
 #   bash scripts/check-ts-surface.sh            # fail non-zero on drift

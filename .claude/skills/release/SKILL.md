@@ -11,9 +11,10 @@ Releases publish `otpless-headless-rn` to npm. Follow in order; stop and report 
 
 - Working tree clean, on an up-to-date `main` (or a release branch cut from it).
 - `make gate` passes.
-- `docs/.doc-sync-state` equals current HEAD — if not, run the **docs-sync** skill first.
+- This repo's Atlas page reflects current HEAD (the `atlas-docs` PR job is green) — if not, run the
+  **docs-sync** skill first.
 - Parity check: if this release changes the response envelope or public TS surface, confirm
-  `otpless-rn-lite` has a coordinated plan (see the parity rule in `CLAUDE.md`). Breaking entries
+  `react-native-headless-lite` has a coordinated plan (see the parity rule in `CLAUDE.md`). Breaking entries
   in the changelog must carry `**BREAKING:**`.
 
 ## 2. Version bump
@@ -62,7 +63,7 @@ someone who does, having completed steps 1-3.
 - Confirm the npm package published (`npm view otpless-headless-rn version`) matches the new
   version.
 - Confirm the GitHub Release was created with the expected conventional-changelog body.
-- After merge, the docs-sync workflow will refresh `docs/SDK-GUIDE.md`'s version header; verify
-  its PR.
+- After merge, the `atlas-docs` workflow's `sync-from-source` job regenerates this repo's
+  mechanical Atlas pages; authored pages (including any version header) need an Atlas PR by hand.
 - If the release included a public-TS-surface change, smoke-test a consuming app (or at least
   `example/`, bootstrapped) against the newly published version before announcing widely.

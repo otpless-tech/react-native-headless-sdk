@@ -35,15 +35,12 @@ and promote it to a versioned heading on release per the **release** skill.
 - Added `api/index.d.ts` + `api/models.d.ts` as the committed public-TS-surface golden, and
   `scripts/check-ts-surface.sh` (`yarn prepack` + declaration-emit diff, `--update` mode) to
   detect drift mechanically.
-- Added `scripts/docs-verify.sh` (mechanical fact-check: guide-vs-code native pins and package
-  version, CHANGELOG heading/history, gate-composition drift across CLAUDE.md / the verify skill
-  / CI).
 - Added a Jest coverage ratchet (`package.json` → `jest.coverageThreshold`) pinned at the measured
   baseline (statements 24%, branches 33.33%, functions 14.28%, lines 24% — `src/index.tsx` only;
   `src/models.tsx` is pure type declarations with no runtime code, hence 0% is not a real gap).
 - Added a response-envelope contract fixture (`src/__tests__/__fixtures__/contract/
   envelope_shape.json`) and a Jest test asserting its key set matches the verbatim
-  `{responseType, response, statusCode}` envelope documented in `docs/SDK-GUIDE.md` §7. Scope,
+  `{responseType, response, statusCode}` envelope documented on this repo's Atlas page. Scope,
   stated honestly: this guards doc/fixture drift only — 100% of the actual marshalling logic is
   Kotlin/Swift, which Jest cannot execute, so this is not a substitute for a native bridge test.
 - Ran `eslint --fix` once as a mechanical, no-behavior-change cleanup: fixed all 301 pre-existing
@@ -58,13 +55,19 @@ and promote it to a versioned heading on release per the **release** skill.
   CHANGELOG released-history guard, a read-only Bash allowlist, and a deny on `git push origin
   main`.
 - Replaced `.github/workflows/ci.yml` with `.github/workflows/build-test.yml` (`make gate` +
-  `actionlint`); added `.github/workflows/docs-verify.yml` and `.github/workflows/docs-sync.yml`
-  (opens a docs PR on merge to `main`, mirroring the android-lite pattern); added
+  `actionlint`); added `.github/workflows/atlas-docs.yml` (see the documentation entry below) and
   `.github/workflows/claude.yml` for `@claude` PR/issue mentions. Updated `.github/dependabot.yml`
   to cover `npm` + `github-actions` (this repo has no Gradle ecosystem to manage).
 - Added `.github/PULL_REQUEST_TEMPLATE.md` with a constitution checklist and a parity-statement
-  line (native-sdks hub rule: phone-auth-affecting changes should note their `otpless-rn-lite`
-  parity status).
-- Added `docs/.doc-sync-state` (currently stamped to the commit the `feat/sdk-guide` PR's
-  `docs/SDK-GUIDE.md` was written against — `a77ac7e6662fec92966e74f9c62053c0b3149095` — since that
-  guide PR has not merged yet; whichever PR merges the guide should re-stamp this to its own HEAD).
+  line (native-sdks hub rule: phone-auth-affecting changes should note their
+  `react-native-headless-lite` parity status).
+- **Documentation moved to `otpless-tech/atlas`.** This repo carries no `docs/` directory: Atlas is
+  the only home for platform documentation. Added `.github/workflows/atlas-docs.yml`, which calls
+  Atlas's `verify-docs` reusable workflow on every PR (fails the PR if an Atlas page this repo owns
+  is stale) and `sync-from-source` on every push to `main`; both jobs need an `ATLAS_PAT` repo
+  secret, since Atlas is private and a reusable workflow's `github.token` is scoped to the caller.
+  Removed the in-repo doc machinery this replaces: `docs/.doc-sync-state`, `scripts/docs-verify.sh`,
+  `.github/workflows/docs-verify.yml`, `.github/workflows/docs-sync.yml`, and the `docs-verify` step
+  of `make gate` — a local gate has no Atlas checkout to diff against, so that check now lives only
+  in CI. Atlas does not yet have a manifest entry for this repo and the `ATLAS_PAT` secret is not
+  yet configured, so the `atlas-docs` jobs currently find no page to act on.

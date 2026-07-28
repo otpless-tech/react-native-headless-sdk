@@ -1,0 +1,59 @@
+name: Atlas docs
+
+# Platform documentation for this repo lives in otpless-tech/atlas. This repo
+# carries no docs/ directory — Atlas is the only home. Two reusable workflows
+# owned by Atlas keep the two in step, and this file is the whole of this repo's
+# opt-in:
+#
+#   verify-docs       on every PR — fails the PR if an Atlas page this repo owns
+#                     is stale relative to the PR head. `make gate` cannot check
+#                     this; it has no Atlas checkout.
+#   sync-from-source  on every push to main — regenerates the Atlas pages this
+#                     repo owns from the merged source and pushes them.
+#
+# This replaces the repo's old docs-sync.yml (LLM-drafted in-repo SDK-GUIDE) and
+# docs-verify.yml (mechanical fact-check of that guide). Both maintained files
+# that no longer exist here; Atlas owns both jobs now.
+#
+# BOTH jobs need the ATLAS_PAT secret, including verify. Atlas is a private repo,
+# and in a reusable workflow the caller's `github.token` is scoped to the CALLER
+# — it cannot read Atlas. Each workflow preflights the secret and fails with an
+# actionable message if it is absent, so a missing PAT is loud, not silent.
+#
+# Required repo secret: ATLAS_PAT — a PAT with read access to otpless-tech/atlas
+# for verify, and contents:write for sync.
+#
+# Atlas's .atlas/manifest.yml has no rule for react-native-headless-sdk yet, so
+# both jobs currently find no pages to act on. That is a warning, not a pass —
+# they begin doing real work the moment a manifest rule naming this repo lands in
+# Atlas, and nothing in this file has to change then.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  # Never cancel a sync mid-push; PR verifies are safe to supersede.
+  group: atlas-docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    uses: otpless-tech/atlas/.github/workflows/verify-docs.yml@main
+    with:
+      source_repo: react-native-headless-sdk
+      source_sha: ${{ github.event.pull_request.head.sha }}
+    secrets:
+      ATLAS_PAT: ${{ secrets.ATLAS_PAT }}
+
+  sync:
+    if: github.event_name == 'push'
+    uses: otpless-tech/atlas/.github/workflows/sync-from-source.yml@main
+    with:
+      source_repo: react-native-headless-sdk
+      source_ref: ${{ github.sha }}
+    secrets:
+      ATLAS_PAT: ${{ secrets.ATLAS_PAT }}
