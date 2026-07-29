@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # No committed root yarn.lock (intentional, see CLAUDE.md) — Dependabot
+    # still manages package.json version ranges for the npm ecosystem fine
+    # without one.
+    ignore:
+      # Constitution (CLAUDE.md §5): this is a thin bridge — react/react-native
+      # stay wide-open peerDependencies ("*"); a Dependabot-driven bump of the
+      # *devDependency* pins here still needs a deliberate compatibility check
+      # against the example app, so majors are excluded from automated PRs.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+# No Gradle ecosystem entry here, unlike the native Android SDKs this bridge
+# depends on — this repo's own Gradle file (android/build.gradle) only
+# declares the pinned native SDK version (managed via the bump-native-sdk
+# skill, not Dependabot) and standard AndroidX/Kotlin build tooling that
+# Dependabot's gradle ecosystem support does not meaningfully manage for a
+# library module like this one.

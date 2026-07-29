@@ -1,0 +1,57 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make:*)",
+      "Bash(yarn:*)",
+      "Bash(npx:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(stat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [
+      "Bash(git push origin main:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c 'import json,sys,os\ntry:\n    data=json.load(sys.stdin)\nexcept Exception:\n    sys.exit(0)\nfp=(data.get(\"tool_input\") or {}).get(\"file_path\") or \"\"\nif not fp:\n    sys.exit(0)\nroot=os.path.realpath(os.getcwd())\nfp=os.path.realpath(fp)\nif fp.startswith(root+\"/\"):\n    rel=fp[len(root)+1:]\nelif os.path.isabs(fp):\n    rel=None\nelse:\n    rel=fp\nif rel is not None and rel.split(\"/\",1)[0]==\"example\":\n    sys.stderr.write(\"example/ is a sample testbed — never modify it unless the user explicitly asked (CLAUDE.md constitution)\\n\")\n    sys.exit(2)\n'"
+          },
+          {
+            "type": "command",
+            "command": "python3 -c 'import json,sys,os\ntry:\n    data=json.load(sys.stdin)\nexcept Exception:\n    sys.exit(0)\nfp=(data.get(\"tool_input\") or {}).get(\"file_path\") or \"\"\nif not fp:\n    sys.exit(0)\nroot=os.path.realpath(os.getcwd())\nfp=os.path.realpath(fp)\nrel=fp[len(root)+1:] if fp.startswith(root+\"/\") else (None if os.path.isabs(fp) else fp)\nif rel in (\"api/index.d.ts\", \"api/models.d.ts\"):\n    sys.stderr.write(\"api/*.d.ts is the GENERATED public-TS-surface golden — never hand-edit. Regenerate instead: bash scripts/check-ts-surface.sh --update, then review the diff.\\n\")\n    sys.exit(2)\n'"
+          },
+          {
+            "type": "command",
+            "command": "python3 -c 'import json,sys,os\ntry:\n    data=json.load(sys.stdin)\nexcept Exception:\n    sys.exit(0)\nfp=(data.get(\"tool_input\") or {}).get(\"file_path\") or \"\"\nif not fp:\n    sys.exit(0)\nroot=os.path.realpath(os.getcwd())\nfp=os.path.realpath(fp)\nrel=fp[len(root)+1:] if fp.startswith(root+\"/\") else (None if os.path.isabs(fp) else fp)\nif rel is not None and rel.startswith(\"src/__tests__/__fixtures__/contract/\"):\n    sys.stderr.write(\"src/__tests__/__fixtures__/contract/ mirrors the response-envelope CONTRACT — there is no generator script (unlike api/*.d.ts); a hand-edit here is a deliberate contract change, not a quick fix. If intentional: edit via Bash (not this tool), then update src/__tests__/contract.test.tsx, this repo's Atlas page in otpless-tech/atlas, and CHANGELOG.md (**BREAKING:** if applicable) in the same change — add-tests skill.\\n\")\n    sys.exit(2)\n'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c 'import json,sys,os\ntry:\n    data=json.load(sys.stdin)\nexcept Exception:\n    sys.exit(0)\nfp=(data.get(\"tool_input\") or {}).get(\"file_path\") or \"\"\nif not fp:\n    sys.exit(0)\nroot=os.path.realpath(os.getcwd())\nfp=os.path.realpath(fp)\nrel=fp[len(root)+1:] if fp.startswith(root+\"/\") else (None if os.path.isabs(fp) else fp)\nif rel is None:\n    sys.exit(0)\nzones=(\"src/index.tsx\", \"src/models.tsx\", \"src/__tests__/__fixtures__/contract/\")\nif any(rel==z or rel.startswith(z) for z in zones):\n    sys.stderr.write(\"Contract-adjacent file changed. If the public TS surface or the response envelope moved, the SAME PR must carry: api/*.d.ts golden refresh (scripts/check-ts-surface.sh --update), contract fixture + contract.test.tsx updates, the matching rows on this repo's Atlas page in otpless-tech/atlas, and a CHANGELOG entry (BREAKING flag if applicable) — CLAUDE.md constitution article 1. Fixture edits are contract changes by definition.\\n\")\n    sys.exit(2)\n'"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}/scripts/hooks/changelog-history-guard.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

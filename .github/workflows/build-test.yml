@@ -1,0 +1,61 @@
+name: Build & Test
+
+# Deterministic CI guardrail for the otpless-headless-rn bridge: `make gate`
+# (install, typecheck, lint, unit tests + coverage ratchet, and the public-TS-
+# surface golden diff — see CLAUDE.md / the verify skill for what each step
+# means) plus actionlint. Runs on every PR into main (no paths filter, so it is
+# safe to require as a branch-protection status check) and on every push to main.
+#
+# Documentation freshness is NOT this workflow's job: platform docs live in
+# otpless-tech/atlas and are gated by .github/workflows/atlas-docs.yml, which
+# calls Atlas's verify-docs reusable workflow on every PR.
+#
+# This workflow never pushes commits. It does NOT compile or test android/
+# or ios/ — see the verify skill's Rung 2 for what that gap means and how to
+# cover it by hand.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: build-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run the verification gate
+        run: make gate
+
+      - name: Upload coverage report on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-report
+          path: coverage/**
+          if-no-files-found: ignore
+
+  actionlint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Run actionlint
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
