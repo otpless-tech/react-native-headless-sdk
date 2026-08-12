@@ -87,7 +87,9 @@ class OtplessHeadlessModule {
     OtplessHeadlessRN.setMfaEnabled(enabled);
   }
 
-  async startBackgroundAuth(config: OtplessBackgroundAuthConfig): Promise<boolean> {
+  async startBackgroundAuth(
+    config: OtplessBackgroundAuthConfig
+  ): Promise<boolean> {
     return await OtplessHeadlessRN.startBackgroundAuth(config);
   }
 
@@ -133,7 +135,12 @@ class OtplessHeadlessModule {
     fallback: boolean = false,
     providerInfo: any = {}
   ) {
-    OtplessHeadlessRN.userAuthEvent(event, fallback, providerType, providerInfo);
+    OtplessHeadlessRN.userAuthEvent(
+      event,
+      fallback,
+      providerType,
+      providerInfo
+    );
   }
 }
 
