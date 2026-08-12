@@ -106,13 +106,15 @@ export interface OtplessRequestInput {
   tid?: string;
   /** Backend-generated or WebAuthn request ID. */
   requestId?: string;
+  deviceFingerprintMode?: OtplessDeviceFingerprintMode;
 }
 
-export interface OtplessOneTapConfig {
+export interface OtplessBackgroundAuthConfig {
   /** Defaults to `true` — presents the OneTap bottom sheet. `false` runs in background when possible. */
   isForeground?: boolean;
   otp?: string;
   tid?: string;
+  deviceFingerprintMode?: OtplessDeviceFingerprintMode;
 }
 
 export type OtplessChannelType =

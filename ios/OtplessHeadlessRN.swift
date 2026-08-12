@@ -101,17 +101,15 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     }
   }
 
-  @objc(setDeviceFingerprintMode:)
-  func setDeviceFingerprintMode(mode: String) {
-    guard let m = fingerprintModeFromString(mode) else { return }
-    Otpless.shared.setDeviceFingerprintMode(m)
-  }
-
-  @objc(startOneTap:resolver:rejecter:)
-  func startOneTap(config: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+  @objc(startBackgroundAuth:resolver:rejecter:)
+  func startBackgroundAuth(config: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
     let isForeground = (config["isForeground"] as? Bool) ?? true
     let otp = config["otp"] as? String
     let tid = config["tid"] as? String
+    if let modeString = config["deviceFingerprintMode"] as? String,
+       let mode = fingerprintModeFromString(modeString.uppercased()) {
+      Otpless.shared.setDeviceFingerprintMode(mode)
+    }
     let authConfig = OtplessAuthCofig(isForeground: isForeground, otp: otp, tid: tid)
     DispatchQueue.main.async {
       let rvc = UIApplication.shared.delegate?.window??.rootViewController

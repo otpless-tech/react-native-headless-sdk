@@ -4,8 +4,7 @@ import type {
   OtplessAuthEvent,
   OtplessProviderType,
   OtplessRequestInput,
-  OtplessDeviceFingerprintMode,
-  OtplessOneTapConfig,
+  OtplessBackgroundAuthConfig,
 } from './models';
 
 const LINKING_ERROR =
@@ -88,12 +87,8 @@ class OtplessHeadlessModule {
     OtplessHeadlessRN.setMfaEnabled(enabled);
   }
 
-  setDeviceFingerprintMode(mode: OtplessDeviceFingerprintMode) {
-    OtplessHeadlessRN.setDeviceFingerprintMode(mode);
-  }
-
-  async startOneTap(config: OtplessOneTapConfig): Promise<boolean> {
-    return await OtplessHeadlessRN.startOneTap(config);
+  async startBackgroundAuth(config: OtplessBackgroundAuthConfig): Promise<boolean> {
+    return await OtplessHeadlessRN.startBackgroundAuth(config);
   }
 
   startInBackground(input: OtplessRequestInput) {

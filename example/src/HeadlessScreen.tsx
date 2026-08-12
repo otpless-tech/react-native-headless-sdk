@@ -145,12 +145,18 @@ export default function HeadlessPage() {
         if (otpLength) req.otpLength = otpLength;
         if (deliveryChannel) req.deliveryChannel = deliveryChannel;
         if (tid) req.tid = tid;
+        if (fingerprintMode !== 'NONE') req.deviceFingerprintMode = fingerprintMode;
         return req;
     };
 
-    const onStartOneTap = async () => {
-        const ok = await headlessModule.startOneTap({ isForeground: true, otp: form.otp, tid: form.tid });
-        setResult((prev) => (prev ? `startOneTap -> ${ok}\n\n${prev}` : `startOneTap -> ${ok}`));
+    const onStartBackgroundAuth = async () => {
+        const ok = await headlessModule.startBackgroundAuth({
+            isForeground: true,
+            otp: form.otp,
+            tid: form.tid,
+            deviceFingerprintMode: fingerprintMode,
+        });
+        setResult((prev) => (prev ? `startBackgroundAuth -> ${ok}\n\n${prev}` : `startBackgroundAuth -> ${ok}`));
     };
 
     const onStartInBackground = () => {
@@ -176,7 +182,6 @@ export default function HeadlessPage() {
         const next: OtplessDeviceFingerprintMode =
             fingerprintMode === 'NONE' ? 'ASYNC' : fingerprintMode === 'ASYNC' ? 'SYNC' : 'NONE';
         setFingerprintMode(next);
-        headlessModule.setDeviceFingerprintMode(next);
     };
 
     return (
@@ -274,8 +279,8 @@ export default function HeadlessPage() {
                 <Text style={styles.buttonText}>Cleanup & Re initialize</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={onStartOneTap}>
-                <Text style={styles.buttonText}>Start OneTap</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={onStartBackgroundAuth}>
+                <Text style={styles.buttonText}>Start Background Auth</Text>
             </TouchableOpacity>
 
             <View style={styles.row}>

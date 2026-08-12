@@ -2,32 +2,27 @@ package com.otplessheadlessrn
 
 import android.app.Activity
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
 import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
-import com.facebook.react.bridge.ReadableType
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
-import com.otpless.v2.android.sdk.dto.AuthEvent
-import com.otpless.v2.android.sdk.dto.DeviceFingerprintMode
-import com.otpless.v2.android.sdk.dto.OtplessChannelType
-import com.otpless.v2.android.sdk.dto.ProviderType
-import com.otpless.v2.android.sdk.dto.OtplessRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
-import com.otpless.v2.android.sdk.dto.ResponseTypes
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
-import com.otpless.v2.android.sdk.view.models.OtplessAuthConfig
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -35,7 +30,10 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
   private var otplessJob: Job? = null
-  private var deviceFingerprintMode: DeviceFingerprintMode = DeviceFingerprintMode.NONE
+  private val lifecycleMutex = Mutex()
+  private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { context, throwable ->
+    Log.d("OTPLESS", "Error in coroutine", throwable)
+  })
 
   init {
     reactContext.addActivityEventListener(this)
@@ -75,23 +73,12 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initialize(appId: String, loginUri: String? = null) {
-    if (currentActivity == null) return
-    (currentActivity as? AppCompatActivity)?.lifecycleScope?.let { scope ->
-      scope.launch(Dispatchers.IO) {
+    val activity = currentActivity ?: return
+    ioScope.launch {
+      lifecycleMutex.withLock {
         OtplessSDK.initialize(
-          appId = appId,
-          activity = currentActivity!!,
-          loginUri = loginUri,
-          callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
-        )
-      }
-    } ?: run {
-      CoroutineScope(Dispatchers.IO).launch {
-        OtplessSDK.initialize(
-          appId = appId,
-          activity = currentActivity!!,
-          loginUri = loginUri,
-          callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
+          appId = appId, activity = activity,
+          loginUri = loginUri, callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
         )
       }
     }
@@ -99,11 +86,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun initTrueCaller(requestMap: ReadableMap, promise: Promise) {
-    if (currentActivity == null) return
+    val activity = currentActivity ?: return
     val request = parseTrueCallerRequest(requestMap)
     val scopes = parseTrueCallerScope(requestMap)
-    val result = OtplessSDK.initTrueCaller(currentActivity!!, request) {
-      OTScopeRequest.ActivityRequest(currentActivity as FragmentActivity, scopes)
+    val result = OtplessSDK.initTrueCaller(activity, request) {
+      OTScopeRequest.ActivityRequest(activity as FragmentActivity, scopes)
     }
     debugLog("init truecaller result: $result")
     promise.resolve(result)
@@ -111,107 +98,25 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun userAuthEvent(event: String, fallback: Boolean, providerType: String, providerInfo: ReadableMap?) {
-    // Defensive enum parsing — unknown values log and return rather than crashing the bridge.
-    val authEvent = runCatching { AuthEvent.valueOf(event) }.getOrElse {
+    val authEvent = parseAuthEvent(event) ?: run {
       debugLog("userAuthEvent: unknown AuthEvent '$event', ignoring call")
       return
     }
-    val provider = runCatching { ProviderType.valueOf(providerType) }.getOrElse {
+    val provider = parseProviderType(providerType) ?: run {
       debugLog("userAuthEvent: unknown ProviderType '$providerType', ignoring call")
       return
     }
-    // Defensive providerInfo parsing — JS passes `any`, so coerce each value to String:
-    // primitives via toString(), Maps/Arrays via JSON serialisation, Null skipped.
-    val infoMap = mutableMapOf<String, String>()
-    if (providerInfo != null) {
-      try {
-        val iterator = providerInfo.keySetIterator()
-        while (iterator.hasNextKey()) {
-          val key = iterator.nextKey() ?: continue
-          val value: String? = when (providerInfo.getType(key)) {
-            ReadableType.String -> providerInfo.getString(key)
-            ReadableType.Number -> providerInfo.getDouble(key).toString()
-            ReadableType.Boolean -> providerInfo.getBoolean(key).toString()
-            ReadableType.Map -> convertMapToJson(providerInfo.getMap(key))?.toString()
-            ReadableType.Array -> convertArrayToJson(providerInfo.getArray(key))?.toString()
-            else -> null  // Null — skip
-          }
-          if (value != null) infoMap[key] = value
-        }
-      } catch (_: Exception) {
-        // swallow any unexpected bridge parsing errors
-      }
-    }
+    val infoMap = parseProviderInfo(providerInfo)
     debugLog("pushing the user auth event\nauthEvent: $authEvent, providerType: $providerType")
     OtplessSDK.userAuthEvent(authEvent, fallback, provider, infoMap)
   }
 
   @ReactMethod
   fun start(data: ReadableMap) {
-    val otplessRequest = OtplessRequest()
-    val phone = data.getString("phone") ?: ""
-    var isOtpPresent = false
-
-    // phone number authentication
-    if (phone.isNotEmpty()) {
-      val countryCode = data.getString("countryCode") ?: ""
-      otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
-      data.getString("otp")?.let {
-        otplessRequest.setOtp(it)
-        isOtpPresent = true
-      }
-    } else {
-      // email authentication
-      val email = data.getString("email") ?: ""
-      if (email.isNotEmpty()) {
-        otplessRequest.setEmail(email)
-        data.getString("otp")?.let {
-          otplessRequest.setOtp(it)
-          isOtpPresent = true
-        }
-      } else {
-        // oauth case
-        otplessRequest.setChannelType(
-          OtplessChannelType.fromString(
-            data.getString("channelType") ?: ""
-          )
-        )
-      }
-    }
-    data.getString("requestId")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.requestId = it
-    }
-    data.getString("expiry")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.setExpiry(it)
-    }
-
-    data.getString("otpLength")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.setOtpLength(it)
-    }
-
-    data.getString("deliveryChannel")?.takeIf { it.isNotBlank() }?.let { deliveryChannel ->
-      otplessRequest.setDeliveryChannel(deliveryChannel.uppercase())
-    }
-
-    data.getString("tid")?.takeIf { it.isNotBlank() }?.let { templateId ->
-      otplessRequest.setTemplateId(templateId)
-    }
-
-    otplessRequest.deviceFingerprintMode = deviceFingerprintMode
-
+    val otplessRequest = parseOtplessRequest(data)
     otplessJob?.cancel()
-    currentActivity?.let {
-      if (isOtpPresent) (it as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-      } else {
-        otplessJob = (it as AppCompatActivity).lifecycleScope.launch {
-          OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-        }
-      }
-    } ?:  run {
-      CoroutineScope(Dispatchers.IO).launch {
-        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-      }
+    otplessJob = ioScope.launch {
+      OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
     }
   }
 
@@ -223,7 +128,11 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   @ReactMethod
   fun cleanup() {
     otplessJob?.cancel()
-    OtplessSDK.cleanup()
+    ioScope.launch {
+      lifecycleMutex.withLock {
+        OtplessSDK.cleanup()
+      }
+    }
   }
 
   @ReactMethod
@@ -238,20 +147,13 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun setDeviceFingerprintMode(mode: String) {
-    runCatching { DeviceFingerprintMode.valueOf(mode) }.getOrNull()?.let {
-      deviceFingerprintMode = it
-    }
-  }
-
-  @ReactMethod
   fun setSimBindingEnabled(enabled: Boolean) {
     OtplessSDK.isSimBindingEnabled = enabled
   }
 
   @ReactMethod
   fun checkSimBindingStatus(promise: Promise) {
-    CoroutineScope(Dispatchers.IO).launch {
+    ioScope.launch {
       try {
         val bound = OtplessSDK.checkSimBindingStatus(reactContext.applicationContext)
         promise.resolve(bound)
@@ -263,7 +165,7 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun clearSimBinding(promise: Promise) {
-    CoroutineScope(Dispatchers.IO).launch {
+    ioScope.launch {
       try {
         OtplessSDK.clearSimBinding(reactContext.applicationContext)
         promise.resolve(null)
@@ -275,112 +177,46 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
 
   @ReactMethod
   fun startInBackground(data: ReadableMap) {
-    val otplessRequest = OtplessRequest()
-    val phone = data.getString("phone") ?: ""
-    if (phone.isNotEmpty()) {
-      val countryCode = data.getString("countryCode") ?: ""
-      otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
-      data.getString("otp")?.let { otplessRequest.setOtp(it) }
-    } else {
-      val email = data.getString("email") ?: ""
-      if (email.isNotEmpty()) {
-        otplessRequest.setEmail(email)
-        data.getString("otp")?.let { otplessRequest.setOtp(it) }
-      } else {
-        otplessRequest.setChannelType(
-          OtplessChannelType.fromString(data.getString("channelType") ?: "")
-        )
-      }
-    }
-    data.getString("requestId")?.takeIf { it.isNotBlank() }?.let { otplessRequest.requestId = it }
-    data.getString("expiry")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setExpiry(it) }
-    data.getString("otpLength")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setOtpLength(it) }
-    data.getString("deliveryChannel")?.takeIf { it.isNotBlank() }?.let {
-      otplessRequest.setDeliveryChannel(it.uppercase())
-    }
-    data.getString("tid")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setTemplateId(it) }
-    otplessRequest.deviceFingerprintMode = deviceFingerprintMode
-
+    val otplessRequest = parseOtplessRequest(data)
     otplessJob?.cancel()
-    currentActivity?.let { activity ->
-      otplessJob = (activity as AppCompatActivity).lifecycleScope.launch(Dispatchers.IO) {
-        OtplessSDK.startInBackground(otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-      }
-    } ?: run {
-      CoroutineScope(Dispatchers.IO).launch {
-        OtplessSDK.startInBackground(otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
-      }
+    otplessJob = ioScope.launch(Dispatchers.IO) {
+      OtplessSDK.startInBackground(otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
     }
   }
 
   @ReactMethod
-  fun startOneTap(config: ReadableMap, promise: Promise) {
-    val isForeground = if (config.hasKey("isForeground")) config.getBoolean("isForeground") else true
-    val otp = config.getString("otp") ?: ""
-    val tid = config.getString("tid")
-    val authConfig = OtplessAuthConfig(
-      isForeground = isForeground,
-      otp = otp,
-      tid = tid,
-      deviceFingerprintMode = deviceFingerprintMode
-    )
+  fun startBackgroundAuth(config: ReadableMap, promise: Promise) {
     val activity = currentActivity
     if (activity == null) {
       promise.resolve(false)
       return
     }
-    (activity as? AppCompatActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
+    val authConfig = parseOtplessAuthConfig(config)
+    ioScope.launch {
       val result = OtplessSDK.start(authConfig)
       promise.resolve(result)
-    } ?: run {
-      CoroutineScope(Dispatchers.IO).launch {
-        val result = OtplessSDK.start(authConfig)
-        promise.resolve(result)
-      }
     }
   }
 
-  companion object {
-    const val NAME = "OtplessHeadlessRN"
-  }
-
   override fun onActivityResult(
-    activity: Activity?,
-    requestCode: Int,
-    resultCode: Int,
-    data: Intent?
+    activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?
   ) {
     OtplessSDK.onActivityResult(requestCode, resultCode, data)
   }
 
   override fun onNewIntent(intent: Intent?) {
     intent ?: return
-    (currentActivity as? AppCompatActivity)?.let { ac ->
-      ac.lifecycleScope.launch(Dispatchers.IO) {
-        OtplessSDK.onNewIntent(intent)
-      }
-    }
+    ioScope.launch { OtplessSDK.onNewIntent(intent) }
   }
 
   @ReactMethod
   fun commitResponse(data: ReadableMap?) {
-    val dataMap = data?.toHashMap() ?: return
-    val jsonResponse = JSONObject(dataMap as Map<*, *>)
-    val otplessResponse = OtplessResponse(
-      responseType = getResponseType(
-        responseTypeString = jsonResponse.optString(
-          "responseType",
-          ""
-        )
-      ),
-      jsonResponse.optJSONObject("response"),
-      jsonResponse.optInt("statusCode", 0),
-    )
+    val otplessResponse = parseOtplessResponse(data) ?: return
     OtplessSDK.commit(otplessResponse)
   }
 
-  private fun getResponseType(responseTypeString: String): ResponseTypes {
-    return ResponseTypes.valueOf(responseTypeString)
+  companion object {
+    const val NAME = "OtplessHeadlessRN"
   }
 }
 

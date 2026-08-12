@@ -32,9 +32,7 @@ RCT_EXTERN_METHOD(isSdkReady: (RCTPromiseResolveBlock*)resolve reject: (RCTPromi
 
 RCT_EXTERN_METHOD(setMfaEnabled:(BOOL)enabled)
 
-RCT_EXTERN_METHOD(setDeviceFingerprintMode:(NSString *)mode)
-
-RCT_EXTERN_METHOD(startOneTap:(NSDictionary *)config
+RCT_EXTERN_METHOD(startBackgroundAuth:(NSDictionary *)config
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
