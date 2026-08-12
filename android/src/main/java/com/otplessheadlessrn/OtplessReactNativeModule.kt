@@ -114,9 +114,18 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   @ReactMethod
   fun start(data: ReadableMap) {
     val otplessRequest = parseOtplessRequest(data)
-    otplessJob?.cancel()
-    otplessJob = ioScope.launch {
-      OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+    val isOtpVerification = !data.getString("otp").isNullOrEmpty()
+
+    if (isOtpVerification) {
+      // OTP submit — slot into the current auth flow; don't cancel, don't track
+      ioScope.launch {
+        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
+    } else {
+      otplessJob?.cancel()
+      otplessJob = ioScope.launch {
+        OtplessSDK.start(request = otplessRequest, this@OtplessHeadlessRNModule::sendHeadlessEventCallback)
+      }
     }
   }
 
