@@ -36,7 +36,7 @@ export default function HeadlessPage() {
   const [simBindingEnabled, setSimBindingEnabled] = useState(false);
   const [fingerprintMode, setFingerprintMode] =
     useState<OtplessDeviceFingerprintMode>('NONE');
-  const APP_ID = '0D9AIJ86AX0DTUAO9919';
+  const APP_ID = 'YOUR_APP_ID';
 
   useEffect(() => {
     headlessModule.initialize(APP_ID);
