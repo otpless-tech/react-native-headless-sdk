@@ -102,6 +102,7 @@ export default function HeadlessPage() {
     if (tid) {
       headlessRequest.tid = tid;
     }
+    headlessRequest.deviceFingerprintMode = fingerprintMode;
     headlessModule.userAuthEvent('AUTH_INITIATED', 'OTPLESS', false, null);
     headlessModule.start(headlessRequest);
   };
@@ -167,7 +168,7 @@ export default function HeadlessPage() {
     if (otpLength) req.otpLength = otpLength;
     if (deliveryChannel) req.deliveryChannel = deliveryChannel;
     if (tid) req.tid = tid;
-    if (fingerprintMode !== 'NONE') req.deviceFingerprintMode = fingerprintMode;
+    req.deviceFingerprintMode = fingerprintMode;
     return req;
   };
 
