@@ -17,6 +17,14 @@ import com.otpless.longclaw.tc.OTLoginPrefixText
 import com.otpless.longclaw.tc.OTScope
 import com.otpless.longclaw.tc.OTVerifyOption
 import com.otpless.longclaw.tc.OtplessTruecallerRequest
+import com.otpless.v2.android.sdk.dto.AuthEvent
+import com.otpless.v2.android.sdk.dto.DeviceFingerprintMode
+import com.otpless.v2.android.sdk.dto.OtplessChannelType
+import com.otpless.v2.android.sdk.dto.OtplessRequest
+import com.otpless.v2.android.sdk.dto.OtplessResponse
+import com.otpless.v2.android.sdk.dto.ProviderType
+import com.otpless.v2.android.sdk.dto.ResponseTypes
+import com.otpless.v2.android.sdk.view.models.OtplessAuthConfig
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -129,6 +137,94 @@ internal fun convertJsonToArray(jsonArray: JSONArray): WritableArray {
     }
   }
   return array
+}
+
+internal fun parseOtplessRequest(data: ReadableMap): OtplessRequest {
+  val otplessRequest = OtplessRequest()
+  data.getString("phone")?.takeIf { it.isNotBlank() }?.let { phone ->
+    val countryCode = data.getString("countryCode") ?: ""
+    otplessRequest.setPhoneNumber(number = phone, countryCode = countryCode)
+  }
+  data.getString("email")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setEmail(it) }
+  data.getString("channelType")?.takeIf { it.isNotBlank() }?.let {
+    otplessRequest.setChannelType(OtplessChannelType.fromString(it))
+  }
+  data.getString("otp")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setOtp(it) }
+  data.getString("requestId")?.takeIf { it.isNotBlank() }?.let { otplessRequest.requestId = it }
+  data.getString("expiry")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setExpiry(it) }
+  data.getString("otpLength")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setOtpLength(it) }
+  data.getString("deliveryChannel")?.takeIf { it.isNotBlank() }?.let {
+    otplessRequest.setDeliveryChannel(it.uppercase())
+  }
+  data.getString("tid")?.takeIf { it.isNotBlank() }?.let { otplessRequest.setTemplateId(it) }
+  data.getString("deviceFingerprintMode")?.takeIf { it.isNotBlank() }?.let { mode ->
+    runCatching { DeviceFingerprintMode.valueOf(mode.uppercase()) }.getOrNull()?.let {
+      otplessRequest.deviceFingerprintMode = it
+    }
+  }
+  return otplessRequest
+}
+
+internal fun parseOtplessAuthConfig(config: ReadableMap): OtplessAuthConfig {
+  val isForeground = if (config.hasKey("isForeground")) config.getBoolean("isForeground") else false
+  val otp = config.getString("otp") ?: ""
+  val tid = config.getString("tid")
+  val fingerprintMode = config.getString("deviceFingerprintMode")
+    ?.takeIf { it.isNotBlank() }
+    ?.let { runCatching { DeviceFingerprintMode.valueOf(it.uppercase()) }.getOrNull() }
+    ?: DeviceFingerprintMode.NONE
+  return OtplessAuthConfig(
+    isForeground = isForeground,
+    otp = otp,
+    tid = tid,
+    deviceFingerprintMode = fingerprintMode
+  )
+}
+
+internal fun parseOtplessResponse(data: ReadableMap?): OtplessResponse? {
+  val dataMap = data?.toHashMap() ?: return null
+  val jsonResponse = JSONObject(dataMap as Map<*, *>)
+  val responseTypeString = jsonResponse.optString("responseType", "")
+  val responseType = runCatching { ResponseTypes.valueOf(responseTypeString) }.getOrElse {
+    debugLog("commitResponse: unknown ResponseType '$responseTypeString', ignoring call")
+    return null
+  }
+  return OtplessResponse(
+    responseType = responseType,
+    jsonResponse.optJSONObject("response"),
+    jsonResponse.optInt("statusCode", 0),
+  )
+}
+
+internal fun parseAuthEvent(event: String): AuthEvent? =
+  runCatching { AuthEvent.valueOf(event) }.getOrNull()
+
+internal fun parseProviderType(providerType: String): ProviderType? =
+  runCatching { ProviderType.valueOf(providerType) }.getOrNull()
+
+// Defensive providerInfo parsing — JS passes `any`, so coerce each value to String:
+// primitives via toString(), Maps/Arrays via JSON serialisation, Null skipped.
+internal fun parseProviderInfo(providerInfo: ReadableMap?): Map<String, String> {
+  val infoMap = mutableMapOf<String, String>()
+  if (providerInfo == null) return infoMap
+  try {
+    val iterator = providerInfo.keySetIterator()
+    while (iterator.hasNextKey()) {
+      val key = iterator.nextKey() ?: continue
+      val value: String? = when (providerInfo.getType(key)) {
+        ReadableType.String -> providerInfo.getString(key)
+        ReadableType.Number -> providerInfo.getDouble(key).toString()
+        ReadableType.Boolean -> providerInfo.getBoolean(key).toString()
+        ReadableType.Map -> convertMapToJson(providerInfo.getMap(key))?.toString()
+        ReadableType.Array -> convertArrayToJson(providerInfo.getArray(key))?.toString()
+        else -> null
+      }
+      if (value != null) infoMap[key] = value
+    }
+  } catch (_: Exception) {
+    // swallow any unexpected bridge parsing errors
+  }
+  return infoMap
 }
 
 internal fun parseTrueCallerRequest(requestMap: ReadableMap): OtplessTruecallerRequest {

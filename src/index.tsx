@@ -3,6 +3,8 @@ import type {
   OtplessTruecallerRequest,
   OtplessAuthEvent,
   OtplessProviderType,
+  OtplessRequestInput,
+  OtplessBackgroundAuthConfig,
 } from './models';
 
 const LINKING_ERROR =
@@ -49,7 +51,7 @@ class OtplessHeadlessModule {
     this.eventEmitter?.addListener('OTPlessEventResult', callback);
   }
 
-  start(input: any) {
+  start(input: OtplessRequestInput) {
     OtplessHeadlessRN.start(input);
   }
 
@@ -81,6 +83,41 @@ class OtplessHeadlessModule {
     OtplessHeadlessRN.setDevLogging(enable);
   }
 
+  setMfaEnabled(enabled: boolean) {
+    OtplessHeadlessRN.setMfaEnabled(enabled);
+  }
+
+  async startBackgroundAuth(
+    config: OtplessBackgroundAuthConfig
+  ): Promise<boolean> {
+    return await OtplessHeadlessRN.startBackgroundAuth(config);
+  }
+
+  startInBackground(input: OtplessRequestInput) {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.startInBackground(input);
+    }
+  }
+
+  setSimBindingEnabled(enabled: boolean) {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.setSimBindingEnabled(enabled);
+    }
+  }
+
+  async checkSimBindingStatus(): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      return await OtplessHeadlessRN.checkSimBindingStatus();
+    }
+    return false;
+  }
+
+  async clearSimBinding(): Promise<void> {
+    if (Platform.OS === 'android') {
+      await OtplessHeadlessRN.clearSimBinding();
+    }
+  }
+
   async isSdkReady(): Promise<boolean> {
     return await OtplessHeadlessRN.isSdkReady();
   }
@@ -92,22 +129,18 @@ class OtplessHeadlessModule {
     return false;
   }
 
-  // Android only — OtplessBM (iOS) has no equivalent.
   userAuthEvent(
     event: OtplessAuthEvent,
     providerType: OtplessProviderType,
     fallback: boolean = false,
-    providerInfo: any = {} // `any` avoids Record<string,string> conflicts across RN versions
+    providerInfo: any = {}
   ) {
-    if (Platform.OS === 'android') {
-      // args reordered to match Kotlin bridge: (event, fallback, providerType, providerInfo)
-      OtplessHeadlessRN.userAuthEvent(
-        event,
-        fallback,
-        providerType,
-        providerInfo
-      );
-    }
+    OtplessHeadlessRN.userAuthEvent(
+      event,
+      fallback,
+      providerType,
+      providerInfo
+    );
   }
 }
 

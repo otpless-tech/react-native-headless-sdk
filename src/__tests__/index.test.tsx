@@ -89,11 +89,17 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
     );
   });
 
-  it('does not call native userAuthEvent on iOS', () => {
+  it('calls native userAuthEvent on iOS (bridge added in OtplessBM 2.3.2)', () => {
     Platform.OS = 'ios';
 
     module.userAuthEvent('AUTH_SUCCESS', 'CLIENT');
 
-    expect(mockNativeModule.userAuthEvent).not.toHaveBeenCalled();
+    expect(mockNativeModule.userAuthEvent).toHaveBeenCalledTimes(1);
+    expect(mockNativeModule.userAuthEvent).toHaveBeenCalledWith(
+      'AUTH_SUCCESS',
+      false,
+      'CLIENT',
+      {}
+    );
   });
 });

@@ -11,13 +11,15 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   
   @objc(commitResponse:)
   func commitResponse(response: [String: Any]?) {
-    guard let response = response else {
+    guard let response = response else { return }
+    guard let responseTypeString = response["responseType"] as? String,
+          let responseType = ResponseTypes(rawValue: responseTypeString) else {
+      print("OtplessHeadlessRN: commitResponse — unknown responseType, ignoring call")
       return
     }
-    let responseType = response["responseType"] as? String ?? "FAILED"
-    let statusCode = response["statusCode"] as? Int ?? -25000
+    let statusCode = response["statusCode"] as? Int ?? 0
     let responseDict = response["response"] as? [String: Any]
-    let otplessResponse = OtplessResponse(responseType: ResponseTypes(rawValue: responseType) ?? .FAILED, response: responseDict, statusCode: statusCode)
+    let otplessResponse = OtplessResponse(responseType: responseType, response: responseDict, statusCode: statusCode)
     Otpless.shared.commitOtplessResponse(otplessResponse)
   }
   
@@ -34,35 +36,40 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   
   private func createOtplessRequest(args: [String: Any]) -> OtplessRequest {
     let otplessRequest = OtplessRequest()
-    if let phone = args["phone"] as? String,
-       let countryCode = args["countryCode"] as? String {
+
+    if let phone = args["phone"] as? String, !phone.isEmpty {
+      let countryCode = args["countryCode"] as? String ?? ""
       otplessRequest.set(phoneNumber: phone, withCountryCode: countryCode)
-    } else if let email = args["email"] as? String {
+    }
+    if let email = args["email"] as? String, !email.isEmpty {
       otplessRequest.set(email: email)
-    } else if let channelType = args["channelType"] as? String {
+    }
+    if let channelType = args["channelType"] as? String, !channelType.isEmpty {
       otplessRequest.set(channelType: OtplessChannelType.fromString(channelType))
     }
-    if let otp = args["otp"] as? String {
+    if let requestId = args["requestId"] as? String, !requestId.isEmpty {
+      otplessRequest.set(fromBackend: requestId)
+    }
+    if let otp = args["otp"] as? String, !otp.isEmpty {
       otplessRequest.set(otp: otp)
     }
-    if let deliveryChannel = args["deliveryChannel"] as? String,
-       !deliveryChannel.isEmpty {
-      otplessRequest.set(deliveryChannelForTransaction: deliveryChannel)
+    if let deliveryChannel = args["deliveryChannel"] as? String, !deliveryChannel.isEmpty {
+      otplessRequest.set(deliveryChannelForTransaction: deliveryChannel.uppercased())
     }
-    if let otpExpiry = args["expiry"] as? String,
-       !otpExpiry.isEmpty {
+    if let otpExpiry = args["expiry"] as? String, !otpExpiry.isEmpty {
       otplessRequest.set(otpExpiry: otpExpiry)
     }
-    if let otpLength = args["otpLength"] as? String,
-       !otpLength.isEmpty {
+    if let otpLength = args["otpLength"] as? String, !otpLength.isEmpty {
       otplessRequest.set(otpLength: otpLength)
     }
-    
-    if let tid = args["tid"] as? String,
-       !tid.isEmpty {
+    if let tid = args["tid"] as? String, !tid.isEmpty {
       otplessRequest.set(tid: tid)
     }
-    
+    if let modeString = args["deviceFingerprintMode"] as? String,
+       let mode = fingerprintModeFromString(modeString.uppercased()) {
+      otplessRequest.set(deviceFingerprintMode: mode)
+    }
+
     return otplessRequest
   }
   
@@ -84,7 +91,86 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       Otpless.shared.setLoggerDelegate(self)
     }
   }
+
+  @objc(setMfaEnabled:)
+  func setMfaEnabled(enabled: Bool) {
+    Otpless.shared.setMfaEnabled(enabled)
+  }
+
+  private func fingerprintModeFromString(_ name: String) -> DeviceFingerprintMode? {
+    switch name {
+    case "NONE":  return .NONE
+    case "ASYNC": return .ASYNC
+    case "SYNC":  return .SYNC
+    default:      return nil
+    }
+  }
+
+  @objc(startBackgroundAuth:resolver:rejecter:)
+  func startBackgroundAuth(config: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+    let isForeground = (config["isForeground"] as? Bool) ?? true
+    let otp = config["otp"] as? String
+    let tid = config["tid"] as? String
+    let mode = (config["deviceFingerprintMode"] as? String)
+      .flatMap { fingerprintModeFromString($0.uppercased()) } ?? .NONE
+    Otpless.shared.setDeviceFingerprintMode(mode)
+    let authConfig = OtplessAuthCofig(isForeground: isForeground, otp: otp, tid: tid)
+    DispatchQueue.main.async {
+      let rvc = UIApplication.shared.delegate?.window??.rootViewController
+        ?? self.getRootViewControllerFromWindowScene()
+      guard let vc = rvc else {
+        resolve(false)
+        return
+      }
+      Task(priority: .userInitiated) {
+        let result = await Otpless.shared.startAuth(parent: vc, config: authConfig)
+        resolve(result)
+      }
+    }
+  }
   
+  private func authEventFromString(_ name: String) -> AuthEvent? {
+    switch name {
+    case "AUTH_INITIATED": return .AUTH_INITIATED
+    case "AUTH_SUCCESS":   return .AUTH_SUCCESS
+    case "AUTH_FAILED":    return .AUTH_FAILED
+    default:               return nil
+    }
+  }
+
+  private func providerTypeFromString(_ name: String) -> ProviderType? {
+    switch name {
+    case "CLIENT":  return .CLIENT
+    case "OTPLESS": return .OTPLESS
+    default:        return nil
+    }
+  }
+
+  @objc(userAuthEvent:fallback:providerType:providerInfo:)
+  func userAuthEvent(event: String, fallback: Bool, providerType: String, providerInfo: [String: Any]?) {
+    guard let authEvent = authEventFromString(event) else { return }
+    guard let provider = providerTypeFromString(providerType) else { return }
+    var info: [String: String] = [:]
+    if let raw = providerInfo {
+      for (key, value) in raw {
+        if let s = value as? String {
+          info[key] = s
+        } else if let n = value as? NSNumber {
+          info[key] = n.stringValue
+        } else if let arr = value as? [Any],
+                  let data = try? JSONSerialization.data(withJSONObject: arr),
+                  let s = String(data: data, encoding: .utf8) {
+          info[key] = s
+        } else if let dict = value as? [String: Any],
+                  let data = try? JSONSerialization.data(withJSONObject: dict),
+                  let s = String(data: data, encoding: .utf8) {
+          info[key] = s
+        }
+      }
+    }
+    Otpless.shared.userAuthEvent(event: authEvent, fallback: fallback, providerType: provider, providerInfo: info)
+  }
+
   override func supportedEvents() -> [String]! {
     return ["OTPlessEventResult"]
   }
@@ -98,19 +184,16 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
   func initialize(appId: String, loginUri: String?) {
     DispatchQueue.main.async {
       let rootViewController = UIApplication.shared.delegate?.window??.rootViewController
-      if rootViewController != nil {
+      if let rvc = rootViewController {
         Otpless.shared.setResponseDelegate(self)
-        Otpless.shared.initialise(withAppId: appId, vc: rootViewController!)
+        Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: rvc)
         return
       }
-      
-      // Could not get an instance of RootViewController. Try to get RootViewController from `windowScene`.
+
       if #available(iOS 13.0, *) {
-        let windowSceneVC = self.getRootViewControllerFromWindowScene()
-        if windowSceneVC != nil {
+        if let windowSceneVC = self.getRootViewControllerFromWindowScene() {
           Otpless.shared.setResponseDelegate(self)
-          Otpless.shared.initialise(withAppId: appId, vc: rootViewController!)
-          return
+          Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: windowSceneVC)
         }
       }
     }

@@ -11,6 +11,7 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		345634094AF2D9B19BB606B6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 59923C057A7F32558564954F /* PrivacyInfo.xcprivacy */; };
 		3CE8FB85DB8D35C6C9223066 /* libPods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 11C08841256EA77F0413FC91 /* libPods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		C252F6D82A56C5FB00FCB5FC /* Connector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C252F6D72A56C5FB00FCB5FC /* Connector.swift */; };
@@ -40,6 +41,7 @@
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = OtplessHeadlessRNExample/main.m; sourceTree = "<group>"; };
 		13B7835A2A174E4A30637943 /* Pods-OtplessHeadlessRNExample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OtplessHeadlessRNExample.release.xcconfig"; path = "Target Support Files/Pods-OtplessHeadlessRNExample/Pods-OtplessHeadlessRNExample.release.xcconfig"; sourceTree = "<group>"; };
 		542A88A82C75D9D3001F21B0 /* OtplessHeadlessRNExample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = OtplessHeadlessRNExample.entitlements; path = OtplessHeadlessRNExample/OtplessHeadlessRNExample.entitlements; sourceTree = "<group>"; };
+		59923C057A7F32558564954F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = OtplessHeadlessRNExample/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		66F65F2CCA80BAB8F0845A6E /* Pods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests.debug.xcconfig"; path = "Target Support Files/Pods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests/Pods-OtplessHeadlessRNExample-OtplessHeadlessRNExampleTests.debug.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = OtplessHeadlessRNExample/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		92981593150AE251B4C2C94A /* libPods-OtplessHeadlessRNExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OtplessHeadlessRNExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +101,7 @@
 				13B07FB71A68108700A75B9A /* main.m */,
 				C252F6D72A56C5FB00FCB5FC /* Connector.swift */,
 				C252F6D62A56C5FB00FCB5FC /* OtplessHeadlessRNExample-Bridging-Header.h */,
+				59923C057A7F32558564954F /* PrivacyInfo.xcprivacy */,
 			);
 			name = OtplessHeadlessRNExample;
 			sourceTree = "<group>";
@@ -251,6 +254,7 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				345634094AF2D9B19BB606B6 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,7 +506,7 @@
 				DEVELOPMENT_TEAM = LRPGAA2922;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = OtplessHeadlessRNExample/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -532,7 +536,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LRPGAA2922;
 				INFOPLIST_FILE = OtplessHeadlessRNExample/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -619,13 +623,10 @@
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-Wl",
-					"-ld_classic",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -690,11 +691,7 @@
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-Wl",
-					"-ld_classic",
-				);
+				OTHER_LDFLAGS = "$(inherited)";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
