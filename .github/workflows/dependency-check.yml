@@ -10,6 +10,7 @@ on:
       - 'example/android/build.gradle'
       - '*.podspec'
       - 'example/ios/Podfile'
+      - '.github/workflows/dependency-check.yml'
   workflow_dispatch:
 
 jobs:
@@ -48,7 +49,7 @@ jobs:
           } > gradle.lockfile
 
           while IFS= read -r line; do
-            coord=$(echo "$line" | grep -oE '["'"'"'][A-Za-z0-9._-]+:[A-Za-z0-9._-]+:[^"'"'"']+["'"'"']' | tr -d '"'"'"'"')
+            coord=$(echo "$line" | grep -oE '["'"'"'][A-Za-z0-9._-]+:[A-Za-z0-9._-]+:[^"'"'"']+["'"'"']' | tr -d '"'"'"'"' || true)
             [ -z "$coord" ] && continue
             coord="${coord//\$kotlin_version/$KOTLIN_VERSION}"
             ver="${coord##*:}"
@@ -97,10 +98,12 @@ jobs:
           cat Podfile.lock
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          scanners: 'vuln'
+          version: 'latest'
           format: 'json'
           output: 'trivy-report.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
