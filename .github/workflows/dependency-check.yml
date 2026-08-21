@@ -103,6 +103,7 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           scanners: 'vuln'
+          version: 'latest'
           format: 'json'
           output: 'trivy-report.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
