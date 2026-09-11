@@ -5,6 +5,7 @@ import type {
   OtplessProviderType,
   OtplessRequestInput,
   OtplessBackgroundAuthConfig,
+  OtplessInitOptions,
 } from './models';
 
 const LINKING_ERROR =
@@ -39,12 +40,21 @@ class OtplessHeadlessModule {
     this.eventEmitter?.removeAllListeners('OTPlessEventResult');
   }
 
-  initialize(appId: String, loginUri: string | null = null) {
+  initialize(
+    appId: string,
+    loginUri: string | null = null,
+    options: OtplessInitOptions | null = null
+  ) {
     if (this.eventEmitter == null) {
       this.eventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
     }
-    // call the native method
-    OtplessHeadlessRN.initialize(appId, loginUri);
+    // call the native method; sslPinning is a plain string so an older
+    // native module degrades to pinning disabled.
+    OtplessHeadlessRN.initialize(
+      appId,
+      loginUri,
+      options?.sslPinning ?? 'disabled'
+    );
   }
 
   setResponseCallback(callback: OtplessResultCallback) {

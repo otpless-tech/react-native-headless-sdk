@@ -142,3 +142,15 @@ export type OtplessChannelType =
   | 'TRUE_CALLER';
 
 export type OtplessDeviceFingerprintMode = 'NONE' | 'ASYNC' | 'SYNC';
+
+/**
+ * SSL pinning mode for `initialize`. `'disabled'` (default) keeps the
+ * 2.3.x behaviour. `'enabled'` pins `sigma.otpless.app`; a pin mismatch
+ * (e.g. an intercepting proxy) fails closed with `FAILED` / statusCode `5004`.
+ */
+export type OtplessSslPinning = 'enabled' | 'disabled';
+
+export interface OtplessInitOptions {
+  /** Defaults to `'disabled'`. */
+  sslPinning?: OtplessSslPinning;
+}

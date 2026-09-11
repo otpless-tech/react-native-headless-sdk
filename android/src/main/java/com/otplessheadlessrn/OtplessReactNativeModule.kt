@@ -13,6 +13,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
+import com.otpless.v2.android.sdk.dto.OtplessSslKind
 import com.otpless.v2.android.sdk.main.OtplessSDK
 import com.otpless.v2.android.sdk.utils.OtplessUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -72,13 +73,16 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun initialize(appId: String, loginUri: String? = null) {
+  fun initialize(appId: String, loginUri: String?, sslPinning: String?) {
     val activity = currentActivity ?: return
+    val sslKind: OtplessSslKind =
+      if (sslPinning == "enabled") OtplessSslKind.SslEnabled else OtplessSslKind.SslDisabled
     ioScope.launch {
       lifecycleMutex.withLock {
         OtplessSDK.initialize(
           appId = appId, activity = activity,
-          loginUri = loginUri, callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback
+          loginUri = loginUri, callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback,
+          sslKind = sslKind
         )
       }
     }

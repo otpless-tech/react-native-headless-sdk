@@ -44,6 +44,24 @@ useEffect(() => {
   }, []);
 ```
 
+### SSL pinning (optional)
+
+SSL pinning is **off by default**; the two-argument `initialize` call above behaves exactly as before. To opt in, pass a third `options` argument:
+
+```javascript
+headlessModule.initialize("YOUR_APPID", null, { sslPinning: 'enabled' });
+```
+
+```ts
+type OtplessSslPinning = 'enabled' | 'disabled';
+interface OtplessInitOptions { sslPinning?: OtplessSslPinning }
+initialize(appId: string, loginUri?: string | null, options?: OtplessInitOptions): void
+```
+
+When enabled, the native SDK pins the TLS certificate of `sigma.otpless.app` on both Android and iOS. If the pin does not match (for example behind an intercepting proxy such as Charles or Proxyman), the SDK **fails closed**: no request leaves the device and you receive `FAILED` with `statusCode` `5004` (see [Response Handling](#response-handling)). If your organisation runs a corporate proxy or a network allowlist, make sure `sigma.otpless.app` is reachable directly with its original certificate.
+
+Requires `io.github.otpless-tech:otpless-headless-sdk` >= 2.0.1 on Android and `OtplessBM/Core` >= 3.0.0 on iOS (both pulled in automatically by this package).
+
 # Initiate Authentication
 
 ## Phone Auth
@@ -86,8 +104,19 @@ const onHeadlessResult = (result: any) => {
       break;
     }
     case "FAILED": {
+      if (result.statusCode == 5003) {
+        // SDK initialization failed (e.g. invalid appId or network unavailable)
         console.log("SDK initialization failed");
-        // Handle SDK initialization failure
+      } else if (result.statusCode == 5004) {
+        // SSL pin validation failed. Only emitted when `initialize` was called
+        // with `{ sslPinning: 'enabled' }`. The SDK sent nothing to the server;
+        // the connection to sigma.otpless.app is being intercepted or its
+        // certificate does not match the expected pin.
+        // result.response = { errorCode: "5004", errorMessage: "SSL pin validation failed" }
+        console.log("SSL pin validation failed");
+      } else {
+        console.log("SDK failed", result.statusCode);
+      }
       break;
     }
     case "INITIATE": {

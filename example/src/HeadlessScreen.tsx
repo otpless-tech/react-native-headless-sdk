@@ -15,6 +15,7 @@ import {
   type OtplessDeviceFingerprintMode,
   type OtplessRequestInput,
   type OtplessChannelType,
+  type OtplessSslPinning,
 } from 'otpless-headless-rn';
 
 const headlessModule = new OtplessHeadlessModule();
@@ -36,15 +37,21 @@ export default function HeadlessPage() {
   const [simBindingEnabled, setSimBindingEnabled] = useState(false);
   const [fingerprintMode, setFingerprintMode] =
     useState<OtplessDeviceFingerprintMode>('NONE');
+  // Off by default; flip the switch and press "Cleanup & Re initialize" to
+  // re-init with pinning on. Behind an intercepting proxy expect FAILED / 5004.
+  const [sslPinning, setSslPinning] = useState<OtplessSslPinning>('disabled');
   const APP_ID = 'YOUR_APP_ID';
 
   useEffect(() => {
-    headlessModule.initialize(APP_ID);
+    headlessModule.initialize(APP_ID, null, { sslPinning });
     headlessModule.setDevLogging(true);
     headlessModule.setResponseCallback(onHeadlessResult);
     return () => {
       headlessModule.clearListener();
     };
+    // Mount-only on purpose: toggling the SSL switch re-inits via the
+    // "Cleanup & Re initialize" button, not by re-running this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (fieldName: string, value: string) => {
@@ -118,7 +125,11 @@ export default function HeadlessPage() {
         });
     }
     console.log(JSON.stringify(data));
-    const dataStr = JSON.stringify(data);
+    let dataStr = JSON.stringify(data);
+    if (data.responseType === 'FAILED' && data.statusCode === 5004) {
+      // Fail-closed SSL pin mismatch: the SDK sent nothing to the server.
+      dataStr = `SSL PINNING FAILED (5004)\n${dataStr}`;
+    }
     setResult((prev) => (prev ? `${dataStr}\n\n${prev}` : dataStr));
     headlessModule.commitResponse(data);
     if (data.responseType == 'OTP_AUTO_READ') {
@@ -138,7 +149,7 @@ export default function HeadlessPage() {
   const cleanupAndReinitialize = () => {
     headlessModule.cleanup();
     headlessModule.clearListener();
-    headlessModule.initialize(APP_ID);
+    headlessModule.initialize(APP_ID, null, { sslPinning });
     headlessModule.setResponseCallback(onHeadlessResult);
   };
 
@@ -214,6 +225,10 @@ export default function HeadlessPage() {
   const onToggleSimBinding = (v: boolean) => {
     setSimBindingEnabled(v);
     headlessModule.setSimBindingEnabled(v);
+  };
+
+  const onToggleSslPinning = (v: boolean) => {
+    setSslPinning(v ? 'enabled' : 'disabled');
   };
 
   const onCycleFingerprint = () => {
@@ -345,6 +360,16 @@ export default function HeadlessPage() {
         >
           <Text style={styles.buttonText}>Fingerprint: {fingerprintMode}</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.row}>
+        <Text style={{ marginHorizontal: 10, color: '#333', fontSize: 16 }}>
+          SSL Pinning (applies on re-initialize)
+        </Text>
+        <Switch
+          value={sslPinning === 'enabled'}
+          onValueChange={onToggleSslPinning}
+        />
       </View>
 
       {Platform.OS === 'android' && (

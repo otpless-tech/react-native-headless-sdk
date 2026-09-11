@@ -180,20 +180,21 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     resolve(Otpless.shared.isSdkReady())
   }
   
-  @objc(initialize:loginUri:)
-  func initialize(appId: String, loginUri: String?) {
+  @objc(initialize:loginUri:sslPinning:)
+  func initialize(appId: String, loginUri: String?, sslPinning: String?) {
+    let sslKind: OtplessSslKind = sslPinning == "enabled" ? .sslEnabled : .sslDisabled
     DispatchQueue.main.async {
       let rootViewController = UIApplication.shared.delegate?.window??.rootViewController
       if let rvc = rootViewController {
         Otpless.shared.setResponseDelegate(self)
-        Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: rvc)
+        Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: rvc, sslKind: sslKind)
         return
       }
 
       if #available(iOS 13.0, *) {
         if let windowSceneVC = self.getRootViewControllerFromWindowScene() {
           Otpless.shared.setResponseDelegate(self)
-          Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: windowSceneVC)
+          Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: windowSceneVC, sslKind: sslKind)
         }
       }
     }

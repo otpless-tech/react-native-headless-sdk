@@ -5,6 +5,7 @@
 
 RCT_EXTERN_METHOD(initialize:(NSString *)appId
                   loginUri: (nullable NSString *) loginUri
+                  sslPinning: (nullable NSString *) sslPinning
                   )
 
 RCT_EXTERN_METHOD(start:(NSDictionary *)request)
@@ -14,10 +15,6 @@ RCT_EXTERN_METHOD(commitResponse: (nullable NSDictionary *) response)
 RCT_EXTERN_METHOD(cleanup)
 
 RCT_EXTERN_METHOD(decimateAll)
-
-RCT_EXTERN_METHOD(setOneTapDataCallback)
-
-RCT_EXTERN_METHOD(performOneTap: (NSDictionary *)request)
 
 RCT_EXTERN_METHOD(authorizeViaPasskey: (NSDictionary *)request)
 
