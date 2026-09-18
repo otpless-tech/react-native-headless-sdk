@@ -15,6 +15,7 @@ import com.otpless.longclaw.tc.OTScopeRequest
 import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.OtplessSslKind
 import com.otpless.v2.android.sdk.main.OtplessSDK
+import com.otpless.v2.android.sdk.utils.BuildPlatform
 import com.otpless.v2.android.sdk.utils.OtplessUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -73,12 +74,24 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun initialize(appId: String, loginUri: String?, sslPinning: String?) {
+  fun initialize(appId: String, loginUri: String?, sslPinning: String?, buildPlatform: String?) {
     val activity = currentActivity ?: return
     val sslKind: OtplessSslKind =
       if (sslPinning == "enabled") OtplessSslKind.SslEnabled else OtplessSslKind.SslDisabled
+    // Wrapper attribution, computed in JS (which owns the single source of
+    // truth for the package version) and arriving as
+    // "react-native-android-<packageVersion>". This bridge is a dumb forwarder;
+    // the literal fallback covers an older JS layer that does not send the
+    // argument, so the token can never be blank.
+    val buildPlatformToken = buildPlatform?.trim()?.takeIf { it.isNotEmpty() } ?: "react-native-android"
     ioScope.launch {
       lifecycleMutex.withLock {
+        // Tells the native SDK this session came through the React Native
+        // wrapper, so device telemetry reports
+        // platform = "otpless-headless-sdk(react-native-android-<version>)"
+        // instead of the default "otpless-headless-sdk(android)". Must be set
+        // before initialize, which is what emits the event.
+        OtplessSDK.buildPlatform = BuildPlatform(buildPlatformToken)
         OtplessSDK.initialize(
           appId = appId, activity = activity,
           loginUri = loginUri, callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback,

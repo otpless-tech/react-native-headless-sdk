@@ -60,7 +60,7 @@ initialize(appId: string, loginUri?: string | null, options?: OtplessInitOptions
 
 When enabled, the native SDK pins the TLS certificate of `sigma.otpless.app` on both Android and iOS. If the pin does not match (for example behind an intercepting proxy such as Charles or Proxyman), the SDK **fails closed**: no request leaves the device and you receive `FAILED` with `statusCode` `5004` (see [Response Handling](#response-handling)). If your organisation runs a corporate proxy or a network allowlist, make sure `sigma.otpless.app` is reachable directly with its original certificate.
 
-Requires `io.github.otpless-tech:otpless-headless-sdk` >= 2.0.1 on Android and `OtplessBM/Core` >= 3.0.0 on iOS (both pulled in automatically by this package).
+Requires `io.github.otpless-tech:otpless-headless-sdk` >= 2.0.1 on Android and `OtplessBM/Core` >= 3.0.1 on iOS (both pulled in automatically by this package).
 
 # Initiate Authentication
 

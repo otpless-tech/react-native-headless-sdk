@@ -180,13 +180,26 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     resolve(Otpless.shared.isSdkReady())
   }
   
-  @objc(initialize:loginUri:sslPinning:)
-  func initialize(appId: String, loginUri: String?, sslPinning: String?) {
+  @objc(initialize:loginUri:sslPinning:buildPlatform:)
+  func initialize(appId: String, loginUri: String?, sslPinning: String?, buildPlatform: String?) {
     let sslKind: OtplessSslKind = sslPinning == "enabled" ? .sslEnabled : .sslDisabled
+    // Wrapper attribution, computed in JS (which owns the single source of
+    // truth for the package version) and arriving as
+    // "react-native-ios-<packageVersion>". This bridge is a dumb forwarder; the
+    // literal fallback covers an older JS layer that does not send the
+    // argument, so the token can never be blank.
+    let trimmedBuildPlatform = buildPlatform?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    let buildPlatformToken = trimmedBuildPlatform.isEmpty ? "react-native-ios" : trimmedBuildPlatform
     DispatchQueue.main.async {
+      // Tells the native SDK this session came through the React Native
+      // wrapper, so device telemetry reports
+      // platform = "otpless-headless(react-native-ios-<version>)" instead of
+      // the default "otpless-headless(ios)". Must be set before initialise,
+      // which is what emits the event.
       let rootViewController = UIApplication.shared.delegate?.window??.rootViewController
       if let rvc = rootViewController {
         Otpless.shared.setResponseDelegate(self)
+        Otpless.shared.setBuildPlatform(buildPlatformToken)
         Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: rvc, sslKind: sslKind)
         return
       }
@@ -194,6 +207,7 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
       if #available(iOS 13.0, *) {
         if let windowSceneVC = self.getRootViewControllerFromWindowScene() {
           Otpless.shared.setResponseDelegate(self)
+          Otpless.shared.setBuildPlatform(buildPlatformToken)
           Otpless.shared.initialise(withAppId: appId, loginUri: loginUri, vc: windowSceneVC, sslKind: sslKind)
         }
       }

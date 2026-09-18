@@ -27,9 +27,65 @@ jest.mock('react-native', () => ({
 
 import { NativeModules, Platform } from 'react-native';
 import { OtplessHeadlessModule } from '../index';
+import { otplessRnVersion } from '../version';
 
 // Get reference to mock for assertions
 const mockNativeModule = NativeModules.OtplessHeadlessRN as any;
+
+describe('OtplessHeadlessModule.initialize build-platform token', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Platform.OS = 'android';
+  });
+
+  // The token is computed once at module load, so the Platform.OS mock above
+  // ('android') is what index.tsx captured. The iOS shape is covered by the
+  // isolated re-import below.
+  it('passes react-native-android-<version> as the fourth argument', () => {
+    const module = new OtplessHeadlessModule();
+    module.initialize('APP_ID', 'https://otpless.com');
+
+    expect(mockNativeModule.initialize).toHaveBeenCalledTimes(1);
+    expect(mockNativeModule.initialize).toHaveBeenCalledWith(
+      'APP_ID',
+      'https://otpless.com',
+      'disabled',
+      `react-native-android-${otplessRnVersion}`
+    );
+  });
+
+  it('keeps the token alongside an explicit sslPinning option', () => {
+    const module = new OtplessHeadlessModule();
+    module.initialize('APP_ID', null, { sslPinning: 'enabled' });
+
+    expect(mockNativeModule.initialize).toHaveBeenCalledWith(
+      'APP_ID',
+      null,
+      'enabled',
+      `react-native-android-${otplessRnVersion}`
+    );
+  });
+
+  it('passes react-native-ios-<version> when loaded on iOS', () => {
+    Platform.OS = 'ios';
+    jest.isolateModules(() => {
+      // Re-import so the module-level token is recomputed with Platform.OS
+      // set to 'ios'.
+      const { OtplessHeadlessModule: IosModule } = require('../index');
+      new IosModule().initialize('APP_ID', null);
+    });
+
+    expect(mockNativeModule.initialize).toHaveBeenCalledWith(
+      'APP_ID',
+      null,
+      'disabled',
+      `react-native-ios-${otplessRnVersion}`
+    );
+  });
+});
 
 describe('OtplessHeadlessModule.userAuthEvent', () => {
   let module: OtplessHeadlessModule;
