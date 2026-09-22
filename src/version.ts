@@ -14,4 +14,4 @@
  * constant falls out of sync, so a forgotten bump breaks CI rather than
  * shipping a wrong token.
  */
-export const otplessRnVersion = '2.4.0';
+export const otplessRnVersion = '3.0.0';

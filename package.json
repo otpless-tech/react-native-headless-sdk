@@ -1,6 +1,6 @@
 {
   "name": "otpless-headless-rn",
-  "version": "2.4.0",
+  "version": "3.0.0",
   "description": "react native plugin for otpless headless android and ios",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
