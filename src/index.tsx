@@ -5,7 +5,9 @@ import type {
   OtplessProviderType,
   OtplessRequestInput,
   OtplessBackgroundAuthConfig,
+  OtplessInitOptions,
 } from './models';
+import { otplessRnVersion } from './version';
 
 const LINKING_ERROR =
   `The package 'otpless-headless-rn' doesn't seem to be linked. Make sure: \n\n` +
@@ -24,6 +26,23 @@ const OtplessHeadlessRN = NativeModules.OtplessHeadlessRN
       }
     );
 
+/**
+ * Wrapper-attribution token sent to the native SDKs at `initialize`.
+ *
+ * Computed here, in JS, so `otplessRnVersion` is the single source of truth:
+ * the Kotlin and Swift bridges only forward whatever arrives over the bridge,
+ * instead of each hardcoding a version that would drift on every release.
+ *
+ * Emitted by the native device-telemetry event as:
+ * - Android - `otpless-headless-sdk(react-native-android-<version>)`
+ * - iOS - `otpless-headless(react-native-ios-<version>)`
+ *
+ * The `react-native-` prefix distinguishes this package from the sibling
+ * wrappers (`react-native-lite-*`, `react-native-turbo-*`), which share the
+ * same iOS telemetry prefix.
+ */
+const BUILD_PLATFORM = `react-native-${Platform.OS}-${otplessRnVersion}`;
+
 interface OtplessResultCallback {
   (result: any): void;
 }
@@ -39,12 +58,24 @@ class OtplessHeadlessModule {
     this.eventEmitter?.removeAllListeners('OTPlessEventResult');
   }
 
-  initialize(appId: String, loginUri: string | null = null) {
+  initialize(
+    appId: string,
+    loginUri: string | null = null,
+    options: OtplessInitOptions | null = null
+  ) {
     if (this.eventEmitter == null) {
       this.eventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
     }
-    // call the native method
-    OtplessHeadlessRN.initialize(appId, loginUri);
+    // call the native method; sslPinning is a plain string so an older
+    // native module degrades to pinning disabled. buildPlatform is internal
+    // wrapper attribution, not a merchant-facing parameter; the native bridges
+    // fall back to a bare "react-native-<platform>" if it ever arrives blank.
+    OtplessHeadlessRN.initialize(
+      appId,
+      loginUri,
+      options?.sslPinning ?? 'disabled',
+      BUILD_PLATFORM
+    );
   }
 
   setResponseCallback(callback: OtplessResultCallback) {
