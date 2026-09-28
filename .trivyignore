@@ -1,0 +1,45 @@
+# Trivy ignore file for otpless-headless-rn
+#
+# Scope note: every entry below is a build-time / example-app-only dependency.
+# The published npm package ships only the paths in package.json "files"
+# (src, lib, android, ios, cpp, *.podspec). No lockfile and no example/ code
+# is published, so none of these reach a merchant's app.
+#
+# Each entry must record: why it cannot be fixed, and a revisit date.
+# Re-evaluate every entry on the revisit date and delete it once a usable
+# fix exists.
+
+# ---------------------------------------------------------------------------
+# image-size 1.2.1 (example/yarn.lock) — HIGH
+# Added 2026-09-28. Revisit 2026-12-28.
+#
+# Upstream HAS published a fix, but only in 2.0.3 — a breaking major.
+# It is not adoptable here:
+#   * image-size is pulled in transitively by metro@0.81.5, which is pinned
+#     exactly by react-native 0.76.9 (the example app's RN version).
+#   * metro declares "image-size": "^1.0.2", so 2.x is outside its range.
+#   * metro/src/Assets.js does `const getImageSize = require("image-size")`
+#     and calls it directly. In 2.x the CommonJS entry point exports an
+#     object ({ imageSize, disableTypes, types, default }) rather than a
+#     callable, so forcing 2.0.3 breaks metro's asset pipeline at bundle
+#     time. Verified locally against image-size@2.0.3.
+# No 1.x backport has been released.
+#
+# Exposure: metro is the React Native bundler. It runs only when building the
+# example app locally; it is a devDependency of example/ and is never
+# published. Clears once react-native/metro moves to image-size 2.x.
+CVE-2025-71329
+CVE-2025-71330
+
+# ---------------------------------------------------------------------------
+# org.jetbrains.kotlin:kotlin-gradle-plugin 2.0.21 (gradle.lockfile) — MEDIUM
+# Added 2026-09-28. Revisit 2026-12-28.
+#
+# The only fixed version Trivy offers is 2.4.20-Beta1, a pre-release. We are
+# not moving the Android build toolchain onto a Kotlin beta to clear a MEDIUM.
+#
+# Exposure: kotlin-gradle-plugin is a Gradle *build* plugin (buildscript
+# classpath in android/build.gradle). It is not packaged into the AAR and not
+# redistributed to merchants. Clears once a stable Kotlin >= 2.4.20 ships and
+# the toolchain is upgraded deliberately.
+CVE-2026-53914
