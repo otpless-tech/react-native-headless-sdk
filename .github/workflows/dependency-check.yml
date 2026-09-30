@@ -6,6 +6,9 @@ on:
     paths:
       - 'package.json'
       - 'yarn.lock'
+      - 'example/package.json'
+      - 'example/yarn.lock'
+      - '.trivyignore'
       - 'android/build.gradle'
       - 'example/android/build.gradle'
       - '*.podspec'
@@ -107,6 +110,7 @@ jobs:
           format: 'json'
           output: 'trivy-report.json'
           severity: 'CRITICAL,HIGH,MEDIUM'
+          trivyignores: '.trivyignore'
 
       - name: Post PR Comment
         if: github.event_name == 'pull_request'
