@@ -79,6 +79,16 @@ class OtplessHeadlessModule {
     this.eventEmitter = null;
   }
 
+  // Created on first use, not in initialize(): on a cold start where the user
+  // is already logged in, apps call setSimBindingCallback() without ever
+  // calling initialize(), and the listener must still attach.
+  private getEventEmitter(): NativeEventEmitter {
+    if (this.eventEmitter == null) {
+      this.eventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
+    }
+    return this.eventEmitter;
+  }
+
   clearListener() {
     this.eventEmitter?.removeAllListeners('OTPlessEventResult');
   }
@@ -88,9 +98,7 @@ class OtplessHeadlessModule {
     loginUri: string | null = null,
     options: OtplessInitOptions | null = null
   ) {
-    if (this.eventEmitter == null) {
-      this.eventEmitter = new NativeEventEmitter(OtplessHeadlessRN);
-    }
+    this.getEventEmitter();
     // call the native method; sslPinning is a plain string so an older
     // native module degrades to pinning disabled. buildPlatform is internal
     // wrapper attribution, not a merchant-facing parameter; the native bridges
@@ -106,7 +114,7 @@ class OtplessHeadlessModule {
   }
 
   setResponseCallback(callback: OtplessResultCallback) {
-    this.eventEmitter?.addListener('OTPlessEventResult', callback);
+    this.getEventEmitter().addListener('OTPlessEventResult', callback);
   }
 
   start(input: OtplessRequestInput) {
@@ -212,8 +220,9 @@ class OtplessHeadlessModule {
    *
    * Overwrite semantics, matching Android's `setSimBindingMonitorCallback`:
    * any earlier listener is removed first, so one state change never fires
-   * the callback twice. Call `initialize()` first, so the event emitter
-   * exists. Passing `null` removes the listener and the native callback.
+   * the callback twice. Does not require `initialize()`, so it can be set on
+   * an app start where no login happens. Passing `null` removes the listener
+   * and the native callback.
    *
    * Android-only; no-op on iOS.
    */
@@ -222,12 +231,13 @@ class OtplessHeadlessModule {
       return;
     }
     // Always clear first so repeated calls overwrite, not stack.
-    this.eventEmitter?.removeAllListeners(SIM_BINDING_EVENT);
+    const emitter = this.getEventEmitter();
+    emitter.removeAllListeners(SIM_BINDING_EVENT);
     if (callback == null) {
       OtplessHeadlessRN.setSimBindingCallback(false);
       return;
     }
-    this.eventEmitter?.addListener(SIM_BINDING_EVENT, callback);
+    emitter.addListener(SIM_BINDING_EVENT, callback);
     OtplessHeadlessRN.setSimBindingCallback(true);
   }
 

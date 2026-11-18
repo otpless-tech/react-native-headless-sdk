@@ -282,3 +282,55 @@ describe('package type exports', () => {
     expect(config.disableOtpAutoRead).toBe('true');
   });
 });
+
+// Cold start: the user is already logged in, so the app never calls
+// initialize() or setResponseCallback() but still watches the SIM binding.
+describe('OtplessHeadlessModule callbacks without initialize()', () => {
+  const emitters = () =>
+    (NativeEventEmitter as unknown as jest.Mock).mock.results.map(
+      (r) => r.value
+    );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    Platform.OS = 'android';
+  });
+
+  it('setSimBindingCallback attaches the listener on a fresh module', () => {
+    const module = new OtplessHeadlessModule();
+    const callback = jest.fn();
+    module.setSimBindingCallback(callback);
+
+    expect(emitters()).toHaveLength(1);
+    expect(emitters()[0].addListener).toHaveBeenCalledWith(
+      'OTPlessSimBindingEvent',
+      callback
+    );
+    expect(mockNativeModule.setSimBindingCallback).toHaveBeenCalledWith(true);
+  });
+
+  it('setSimBindingCallback(null) on a fresh module still clears native', () => {
+    new OtplessHeadlessModule().setSimBindingCallback(null);
+    expect(mockNativeModule.setSimBindingCallback).toHaveBeenCalledWith(false);
+  });
+
+  it('setResponseCallback attaches the listener before initialize()', () => {
+    const module = new OtplessHeadlessModule();
+    const callback = jest.fn();
+    module.setResponseCallback(callback);
+
+    expect(emitters()[0].addListener).toHaveBeenCalledWith(
+      'OTPlessEventResult',
+      callback
+    );
+  });
+
+  it('reuses one emitter across setSimBindingCallback and initialize()', () => {
+    const module = new OtplessHeadlessModule();
+    module.setSimBindingCallback(jest.fn());
+    module.initialize('APP_ID');
+    module.setResponseCallback(jest.fn());
+
+    expect(emitters()).toHaveLength(1);
+  });
+});
