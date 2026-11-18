@@ -62,6 +62,13 @@ When enabled, the native SDK pins the TLS certificate of `sigma.otpless.app` on 
 
 Requires `io.github.otpless-tech:otpless-headless-sdk` >= 2.0.1 on Android and `OtplessBM/Core` >= 3.0.1 on iOS (both pulled in automatically by this package).
 
+### Device integrity
+
+As of 3.1.0 this package pulls in `otpless-headless-sdk` 2.4.0 (Android) and `OtplessBM/Core` 3.1.1 (iOS). Device integrity attestation needs no JavaScript API on either platform:
+
+- **Android — Google Play Integrity.** Internal to the native SDK. Your app must be distributed through Google Play and linked to a Play Console project for attestation to succeed. Setup does not delay `initialize`; when Play Integrity is not mandatory for your app, the SDK waits up to 5 seconds for the token before sending the intent.
+- **iOS — Apple App Attest (iOS 14+).** Internal to `OtplessBM` and switched on per app by OTPLESS through the merchant config. It runs in the background after `SDK_READY` and never delays or fails an authentication. Without any entitlement Apple issues development keys; for App Store / TestFlight builds add the `com.apple.developer.devicecheck.appattest-environment` entitlement with the value `production` to your app's entitlements file. The simulator and unsupported devices are skipped.
+
 # Initiate Authentication
 
 ## Phone Auth
