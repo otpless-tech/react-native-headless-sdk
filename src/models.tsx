@@ -150,7 +150,35 @@ export type OtplessDeviceFingerprintMode = 'NONE' | 'ASYNC' | 'SYNC';
  */
 export type OtplessSslPinning = 'enabled' | 'disabled';
 
+/**
+ * Keys accepted by `OtplessInitOptions.config`. Mirrors the native
+ * `OtplessConfigKey` (Android SDK 2.3.0+).
+ * - `disableOtpAutoRead`: pass `'true'` to stop the Android SDK from
+ *   registering the SMS / WhatsApp zero-tap OTP auto-read receivers for this
+ *   `initialize` call (intended for SNA-only integrations). Any other value,
+ *   or leaving it out, keeps auto-read on. iOS has no OTP auto-read and
+ *   ignores it.
+ */
+export type OtplessConfigKey = 'disableOtpAutoRead';
+
+export type OtplessConfig = Partial<Record<OtplessConfigKey, string>>;
+
 export interface OtplessInitOptions {
   /** Defaults to `'disabled'`. */
   sslPinning?: OtplessSslPinning;
+  /**
+   * Native SDK config, applied at `initialize`. Unknown keys and non-string
+   * values are dropped. Changing it requires calling `initialize` again.
+   */
+  config?: OtplessConfig;
 }
+
+/**
+ * SIM binding state emitted by the Android SIM binding monitor.
+ * - `'ENABLED'`: fired after a successful binding save.
+ * - `'DISABLED'`: fired on any clear, or on SIM removal while
+ *   `registerSimBindingMonitor()` is active.
+ */
+export type SimBindingState = 'ENABLED' | 'DISABLED';
+
+export type SimBindingCallback = (event: { state: SimBindingState }) => void;

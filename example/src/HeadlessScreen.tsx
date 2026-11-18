@@ -16,6 +16,8 @@ import {
   type OtplessRequestInput,
   type OtplessChannelType,
   type OtplessSslPinning,
+  type OtplessInitOptions,
+  type SimBindingState,
 } from 'otpless-headless-rn';
 
 const headlessModule = new OtplessHeadlessModule();
@@ -40,10 +42,23 @@ export default function HeadlessPage() {
   // Off by default; flip the switch and press "Cleanup & Re initialize" to
   // re-init with pinning on. Behind an intercepting proxy expect FAILED / 5004.
   const [sslPinning, setSslPinning] = useState<OtplessSslPinning>('disabled');
+  // Android only: flipping the switch re-initialises with the new config.
+  const [disableOtpAutoRead, setDisableOtpAutoRead] = useState(false);
+  const [simMonitorActive, setSimMonitorActive] = useState(false);
+  const [lastSimState, setLastSimState] = useState<SimBindingState | null>(
+    null
+  );
   const APP_ID = 'YOUR_APP_ID';
 
+  const initOptions = (
+    disableAutoRead: boolean = disableOtpAutoRead
+  ): OtplessInitOptions => ({
+    sslPinning,
+    config: disableAutoRead ? { disableOtpAutoRead: 'true' } : {},
+  });
+
   useEffect(() => {
-    headlessModule.initialize(APP_ID, null, { sslPinning });
+    headlessModule.initialize(APP_ID, null, initOptions());
     headlessModule.setDevLogging(true);
     headlessModule.setResponseCallback(onHeadlessResult);
     return () => {
@@ -146,10 +161,12 @@ export default function HeadlessPage() {
     Clipboard.setString(result);
   };
 
-  const cleanupAndReinitialize = () => {
+  const cleanupAndReinitialize = (
+    disableAutoRead: boolean = disableOtpAutoRead
+  ) => {
     headlessModule.cleanup();
     headlessModule.clearListener();
-    headlessModule.initialize(APP_ID, null, { sslPinning });
+    headlessModule.initialize(APP_ID, null, initOptions(disableAutoRead));
     headlessModule.setResponseCallback(onHeadlessResult);
   };
 
@@ -225,6 +242,30 @@ export default function HeadlessPage() {
   const onToggleSimBinding = (v: boolean) => {
     setSimBindingEnabled(v);
     headlessModule.setSimBindingEnabled(v);
+  };
+
+  const onToggleDisableOtpAutoRead = (v: boolean) => {
+    setDisableOtpAutoRead(v);
+    cleanupAndReinitialize(v);
+  };
+
+  const onStartSimMonitor = async () => {
+    headlessModule.setSimBindingCallback(({ state }) => {
+      setLastSimState(state);
+      setResult((prev) =>
+        prev
+          ? `simBindingState -> ${state}\n\n${prev}`
+          : `simBindingState -> ${state}`
+      );
+    });
+    const registered = await headlessModule.registerSimBindingMonitor();
+    setSimMonitorActive(registered);
+  };
+
+  const onStopSimMonitor = () => {
+    headlessModule.unregisterSimBindingMonitor();
+    headlessModule.setSimBindingCallback(null);
+    setSimMonitorActive(false);
   };
 
   const onToggleSslPinning = (v: boolean) => {
@@ -337,7 +378,7 @@ export default function HeadlessPage() {
 
       <TouchableOpacity
         style={styles.primaryButton}
-        onPress={cleanupAndReinitialize}
+        onPress={() => cleanupAndReinitialize()}
       >
         <Text style={styles.buttonText}>Cleanup & Re initialize</Text>
       </TouchableOpacity>
@@ -401,6 +442,33 @@ export default function HeadlessPage() {
             <Switch
               value={simBindingEnabled}
               onValueChange={onToggleSimBinding}
+            />
+          </View>
+          <View style={styles.row}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { flex: 1 }]}
+              onPress={onStartSimMonitor}
+            >
+              <Text style={styles.buttonText}>Start SIM monitor</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.primaryButton, { flex: 1 }]}
+              onPress={onStopSimMonitor}
+            >
+              <Text style={styles.buttonText}>Stop SIM monitor</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ marginHorizontal: 10, color: '#333', fontSize: 16 }}>
+            SIM monitor: {simMonitorActive ? 'on' : 'off'} · last state:{' '}
+            {lastSimState ?? '—'}
+          </Text>
+          <View style={styles.row}>
+            <Text style={{ marginHorizontal: 10, color: '#333', fontSize: 16 }}>
+              Disable OTP auto-read (Android)
+            </Text>
+            <Switch
+              value={disableOtpAutoRead}
+              onValueChange={onToggleDisableOtpAutoRead}
             />
           </View>
         </>

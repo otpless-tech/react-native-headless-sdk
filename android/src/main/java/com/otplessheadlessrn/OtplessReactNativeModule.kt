@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.fragment.app.FragmentActivity
 import com.facebook.react.bridge.ActivityEventListener
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -12,9 +13,11 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.otpless.longclaw.tc.OTScopeRequest
+import com.otpless.v2.android.sdk.dto.OtplessConfigKey
 import com.otpless.v2.android.sdk.dto.OtplessResponse
 import com.otpless.v2.android.sdk.dto.OtplessSslKind
 import com.otpless.v2.android.sdk.main.OtplessSDK
+import com.otpless.v2.android.sdk.simbinding.SimBindingState
 import com.otpless.v2.android.sdk.utils.BuildPlatform
 import com.otpless.v2.android.sdk.utils.OtplessUtils
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -74,10 +77,17 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
   }
 
   @ReactMethod
-  fun initialize(appId: String, loginUri: String?, sslPinning: String?, buildPlatform: String?) {
+  fun initialize(
+    appId: String,
+    loginUri: String?,
+    sslPinning: String?,
+    buildPlatform: String?,
+    config: ReadableMap?
+  ) {
     val activity = currentActivity ?: return
     val sslKind: OtplessSslKind =
       if (sslPinning == "enabled") OtplessSslKind.SslEnabled else OtplessSslKind.SslDisabled
+    val sdkConfig = parseConfig(config)
     // Wrapper attribution, computed in JS (which owns the single source of
     // truth for the package version) and arriving as
     // "react-native-android-<packageVersion>". This bridge is a dumb forwarder;
@@ -95,7 +105,8 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
         OtplessSDK.initialize(
           appId = appId, activity = activity,
           loginUri = loginUri, callback = this@OtplessHeadlessRNModule::sendHeadlessEventCallback,
-          sslKind = sslKind
+          sslKind = sslKind,
+          config = sdkConfig
         )
       }
     }
@@ -201,6 +212,45 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     }
   }
 
+  /**
+   * Start observing SIM state changes. Idempotent: the SDK no-ops on repeat
+   * calls until [unregisterSimBindingMonitor]. Uses the application context so
+   * the listener survives activity recreation.
+   */
+  @ReactMethod
+  fun registerSimBindingMonitor(promise: Promise) {
+    promise.resolve(OtplessSDK.registerSimBindingMonitor(reactContext.applicationContext))
+  }
+
+  /**
+   * Stop observing SIM state changes. Does not clear the callback set via
+   * [setSimBindingCallback], which keeps receiving save/clear events.
+   */
+  @ReactMethod
+  fun unregisterSimBindingMonitor() {
+    OtplessSDK.unregisterSimBindingMonitor(reactContext.applicationContext)
+  }
+
+  /**
+   * When [enabled] is true, emit every SIM binding state change (ENABLED after
+   * a save; DISABLED on clear or on SIM removal while the monitor is
+   * registered) to JS as a [SIM_BINDING_EVENT] event. When false, clear the
+   * native callback.
+   */
+  @ReactMethod
+  fun setSimBindingCallback(enabled: Boolean) {
+    if (enabled) {
+      OtplessSDK.setSimBindingMonitorCallback { state: SimBindingState ->
+        val map = Arguments.createMap()
+        map.putString("state", state.name)
+        reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+          .emit(SIM_BINDING_EVENT, map)
+      }
+    } else {
+      OtplessSDK.setSimBindingMonitorCallback(null)
+    }
+  }
+
   @ReactMethod
   fun startInBackground(data: ReadableMap) {
     val otplessRequest = parseOtplessRequest(data)
@@ -241,8 +291,26 @@ class OtplessHeadlessRNModule(private val reactContext: ReactApplicationContext)
     OtplessSDK.commit(otplessResponse)
   }
 
+  /**
+   * Maps the JS config to [OtplessConfigKey]. Mapped by name explicitly (the
+   * JS and Kotlin casing differ); unknown keys and non-string values are
+   * dropped.
+   */
+  private fun parseConfig(config: ReadableMap?): Map<OtplessConfigKey, String> {
+    val entries = config?.toHashMap() ?: return emptyMap()
+    return entries.mapNotNull { (key, value) ->
+      val configKey = when (key) {
+        "disableOtpAutoRead" -> OtplessConfigKey.DisableOtpAutoRead
+        else -> null
+      }
+      val stringValue = value as? String
+      if (configKey != null && stringValue != null) configKey to stringValue else null
+    }.toMap()
+  }
+
   companion object {
     const val NAME = "OtplessHeadlessRN"
+    private const val SIM_BINDING_EVENT = "OTPlessSimBindingEvent"
   }
 }
 

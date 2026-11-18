@@ -7,6 +7,7 @@ RCT_EXTERN_METHOD(initialize:(NSString *)appId
                   loginUri: (nullable NSString *) loginUri
                   sslPinning: (nullable NSString *) sslPinning
                   buildPlatform: (nullable NSString *) buildPlatform
+                  config: (nullable NSDictionary *) config
                   )
 
 RCT_EXTERN_METHOD(start:(NSDictionary *)request)

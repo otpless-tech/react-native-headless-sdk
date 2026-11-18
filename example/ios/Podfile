@@ -42,5 +42,18 @@ target 'OtplessHeadlessRNExample' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
+
+    # Xcode 27: pods must target iOS 15+, and fmt 11's consteval format
+    # checks don't compile under C++20 there, so build fmt as C++17.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        if build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.1
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+        if target.name == 'fmt'
+          build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        end
+      end
+    end
   end
 end
