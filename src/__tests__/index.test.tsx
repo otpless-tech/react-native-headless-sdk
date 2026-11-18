@@ -11,6 +11,9 @@ jest.mock('react-native', () => ({
       initTrueCaller: jest.fn(),
       decimateAll: jest.fn(),
       userAuthEvent: jest.fn(),
+      registerSimBindingMonitor: jest.fn(() => Promise.resolve(true)),
+      unregisterSimBindingMonitor: jest.fn(),
+      setSimBindingCallback: jest.fn(),
       addListener: jest.fn(),
       removeListeners: jest.fn(),
     },
@@ -25,8 +28,9 @@ jest.mock('react-native', () => ({
   },
 }));
 
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 import { OtplessHeadlessModule } from '../index';
+import type { SimBindingState, OtplessConfig } from '../index';
 import { otplessRnVersion } from '../version';
 
 // Get reference to mock for assertions
@@ -53,7 +57,8 @@ describe('OtplessHeadlessModule.initialize build-platform token', () => {
       'APP_ID',
       'https://otpless.com',
       'disabled',
-      `react-native-android-${otplessRnVersion}`
+      `react-native-android-${otplessRnVersion}`,
+      {}
     );
   });
 
@@ -65,7 +70,8 @@ describe('OtplessHeadlessModule.initialize build-platform token', () => {
       'APP_ID',
       null,
       'enabled',
-      `react-native-android-${otplessRnVersion}`
+      `react-native-android-${otplessRnVersion}`,
+      {}
     );
   });
 
@@ -82,7 +88,8 @@ describe('OtplessHeadlessModule.initialize build-platform token', () => {
       'APP_ID',
       null,
       'disabled',
-      `react-native-ios-${otplessRnVersion}`
+      `react-native-ios-${otplessRnVersion}`,
+      {}
     );
   });
 });
@@ -157,5 +164,121 @@ describe('OtplessHeadlessModule.userAuthEvent', () => {
       'CLIENT',
       {}
     );
+  });
+});
+
+describe('OtplessHeadlessModule.initialize config', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('forwards disableOtpAutoRead as the fifth argument', () => {
+    new OtplessHeadlessModule().initialize('APP_ID', null, {
+      config: { disableOtpAutoRead: 'true' },
+    });
+
+    expect(mockNativeModule.initialize).toHaveBeenCalledWith(
+      'APP_ID',
+      null,
+      'disabled',
+      `react-native-android-${otplessRnVersion}`,
+      { disableOtpAutoRead: 'true' }
+    );
+  });
+
+  it('sends an empty config when none is given', () => {
+    new OtplessHeadlessModule().initialize('APP_ID', null, {
+      sslPinning: 'enabled',
+    });
+
+    expect(mockNativeModule.initialize.mock.calls[0][4]).toEqual({});
+  });
+
+  it('drops unknown keys and non-string values', () => {
+    new OtplessHeadlessModule().initialize('APP_ID', null, {
+      config: { disableOtpAutoRead: true, unknownKey: 'x' } as any,
+    });
+
+    expect(mockNativeModule.initialize.mock.calls[0][4]).toEqual({});
+  });
+});
+
+describe('OtplessHeadlessModule SIM binding monitor', () => {
+  let module: OtplessHeadlessModule;
+
+  // The emitter created by initialize(); NativeEventEmitter is mocked to
+  // return a fresh object per construction.
+  const lastEmitter = () => {
+    const results = (NativeEventEmitter as unknown as jest.Mock).mock.results;
+    return results[results.length - 1]!.value;
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    module = new OtplessHeadlessModule();
+    module.initialize('APP_ID');
+  });
+
+  afterEach(() => {
+    Platform.OS = 'android';
+  });
+
+  it('registerSimBindingMonitor resolves the native result on Android', async () => {
+    await expect(module.registerSimBindingMonitor()).resolves.toBe(true);
+    expect(mockNativeModule.registerSimBindingMonitor).toHaveBeenCalledTimes(1);
+  });
+
+  it('unregisterSimBindingMonitor calls native on Android', () => {
+    module.unregisterSimBindingMonitor();
+    expect(mockNativeModule.unregisterSimBindingMonitor).toHaveBeenCalledTimes(
+      1
+    );
+  });
+
+  it('setSimBindingCallback attaches one listener and enables native', () => {
+    const callback = jest.fn();
+    module.setSimBindingCallback(callback);
+
+    const emitter = lastEmitter();
+    expect(emitter.removeAllListeners).toHaveBeenCalledWith(
+      'OTPlessSimBindingEvent'
+    );
+    expect(emitter.addListener).toHaveBeenCalledWith(
+      'OTPlessSimBindingEvent',
+      callback
+    );
+    expect(mockNativeModule.setSimBindingCallback).toHaveBeenCalledWith(true);
+  });
+
+  it('setSimBindingCallback(null) removes the listener and disables native', () => {
+    module.setSimBindingCallback(null);
+
+    const emitter = lastEmitter();
+    expect(emitter.removeAllListeners).toHaveBeenCalledWith(
+      'OTPlessSimBindingEvent'
+    );
+    expect(emitter.addListener).not.toHaveBeenCalled();
+    expect(mockNativeModule.setSimBindingCallback).toHaveBeenCalledWith(false);
+  });
+
+  it('is a no-op on iOS, and register resolves false', async () => {
+    Platform.OS = 'ios';
+
+    await expect(module.registerSimBindingMonitor()).resolves.toBe(false);
+    module.unregisterSimBindingMonitor();
+    module.setSimBindingCallback(jest.fn());
+
+    expect(mockNativeModule.registerSimBindingMonitor).not.toHaveBeenCalled();
+    expect(mockNativeModule.unregisterSimBindingMonitor).not.toHaveBeenCalled();
+    expect(mockNativeModule.setSimBindingCallback).not.toHaveBeenCalled();
+  });
+});
+
+describe('package type exports', () => {
+  it('exports SimBindingState and OtplessConfig', () => {
+    const states: SimBindingState[] = ['ENABLED', 'DISABLED'];
+    const config: OtplessConfig = { disableOtpAutoRead: 'true' };
+    expect(states).toHaveLength(2);
+    expect(config.disableOtpAutoRead).toBe('true');
   });
 });

@@ -6,6 +6,9 @@ import type {
   OtplessRequestInput,
   OtplessBackgroundAuthConfig,
   OtplessInitOptions,
+  OtplessConfig,
+  OtplessConfigKey,
+  SimBindingCallback,
 } from './models';
 import { otplessRnVersion } from './version';
 
@@ -47,6 +50,28 @@ interface OtplessResultCallback {
   (result: any): void;
 }
 
+const SIM_BINDING_EVENT = 'OTPlessSimBindingEvent';
+
+const CONFIG_KEYS: readonly OtplessConfigKey[] = ['disableOtpAutoRead'];
+
+/**
+ * Keeps only known keys with string values, so the native side never sees
+ * anything it cannot map to `OtplessConfigKey`.
+ */
+function sanitizeConfig(config: OtplessConfig | undefined): OtplessConfig {
+  const result: OtplessConfig = {};
+  if (config == null || typeof config !== 'object') {
+    return result;
+  }
+  for (const key of CONFIG_KEYS) {
+    const value = (config as Record<string, unknown>)[key];
+    if (typeof value === 'string') {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 class OtplessHeadlessModule {
   private eventEmitter: NativeEventEmitter | null = null;
 
@@ -70,11 +95,13 @@ class OtplessHeadlessModule {
     // native module degrades to pinning disabled. buildPlatform is internal
     // wrapper attribution, not a merchant-facing parameter; the native bridges
     // fall back to a bare "react-native-<platform>" if it ever arrives blank.
+    // config is forwarded as a map; iOS accepts and ignores it.
     OtplessHeadlessRN.initialize(
       appId,
       loginUri,
       options?.sslPinning ?? 'disabled',
-      BUILD_PLATFORM
+      BUILD_PLATFORM,
+      sanitizeConfig(options?.config)
     );
   }
 
@@ -147,6 +174,61 @@ class OtplessHeadlessModule {
     if (Platform.OS === 'android') {
       await OtplessHeadlessRN.clearSimBinding();
     }
+  }
+
+  /**
+   * Start observing SIM state changes on Android, so the callback set via
+   * `setSimBindingCallback` fires with `state: 'DISABLED'` when the bound SIM
+   * is removed. Idempotent: repeat calls are no-ops until
+   * `unregisterSimBindingMonitor()`. Resolves `true` once the monitor is
+   * registered.
+   *
+   * Android-only; resolves `false` on iOS (the iOS SDK has no SIM binding
+   * monitor).
+   */
+  registerSimBindingMonitor(): Promise<boolean> {
+    if (Platform.OS === 'android') {
+      return OtplessHeadlessRN.registerSimBindingMonitor();
+    }
+    return Promise.resolve(false);
+  }
+
+  /**
+   * Stop observing SIM state changes on Android. Does not clear the callback
+   * set via `setSimBindingCallback`, which keeps receiving save/clear events.
+   *
+   * Android-only; no-op on iOS.
+   */
+  unregisterSimBindingMonitor() {
+    if (Platform.OS === 'android') {
+      OtplessHeadlessRN.unregisterSimBindingMonitor();
+    }
+  }
+
+  /**
+   * Set (or clear with `null`) the callback that fires on every SIM binding
+   * state change: `ENABLED` after a binding is saved, `DISABLED` on any clear
+   * or on SIM removal while `registerSimBindingMonitor()` is active.
+   *
+   * Overwrite semantics, matching Android's `setSimBindingMonitorCallback`:
+   * any earlier listener is removed first, so one state change never fires
+   * the callback twice. Call `initialize()` first, so the event emitter
+   * exists. Passing `null` removes the listener and the native callback.
+   *
+   * Android-only; no-op on iOS.
+   */
+  setSimBindingCallback(callback: SimBindingCallback | null) {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+    // Always clear first so repeated calls overwrite, not stack.
+    this.eventEmitter?.removeAllListeners(SIM_BINDING_EVENT);
+    if (callback == null) {
+      OtplessHeadlessRN.setSimBindingCallback(false);
+      return;
+    }
+    this.eventEmitter?.addListener(SIM_BINDING_EVENT, callback);
+    OtplessHeadlessRN.setSimBindingCallback(true);
   }
 
   async isSdkReady(): Promise<boolean> {

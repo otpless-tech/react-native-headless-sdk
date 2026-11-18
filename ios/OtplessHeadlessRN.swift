@@ -180,8 +180,11 @@ class OtplessHeadlessRN: RCTEventEmitter, OtplessResponseDelegate {
     resolve(Otpless.shared.isSdkReady())
   }
   
-  @objc(initialize:loginUri:sslPinning:buildPlatform:)
-  func initialize(appId: String, loginUri: String?, sslPinning: String?, buildPlatform: String?) {
+  // config (OtplessConfigKey) is accepted for signature parity with Android
+  // and deliberately not read: its only key, disableOtpAutoRead, targets
+  // Android's SMS / WhatsApp auto-read, which iOS lacks.
+  @objc(initialize:loginUri:sslPinning:buildPlatform:config:)
+  func initialize(appId: String, loginUri: String?, sslPinning: String?, buildPlatform: String?, config: [String: Any]?) {
     let sslKind: OtplessSslKind = sslPinning == "enabled" ? .sslEnabled : .sslDisabled
     // Wrapper attribution, computed in JS (which owns the single source of
     // truth for the package version) and arriving as

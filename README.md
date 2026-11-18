@@ -54,13 +54,51 @@ headlessModule.initialize("YOUR_APPID", null, { sslPinning: 'enabled' });
 
 ```ts
 type OtplessSslPinning = 'enabled' | 'disabled';
-interface OtplessInitOptions { sslPinning?: OtplessSslPinning }
+type OtplessConfig = { disableOtpAutoRead?: string };
+interface OtplessInitOptions { sslPinning?: OtplessSslPinning; config?: OtplessConfig }
 initialize(appId: string, loginUri?: string | null, options?: OtplessInitOptions): void
 ```
 
 When enabled, the native SDK pins the TLS certificate of `sigma.otpless.app` on both Android and iOS. If the pin does not match (for example behind an intercepting proxy such as Charles or Proxyman), the SDK **fails closed**: no request leaves the device and you receive `FAILED` with `statusCode` `5004` (see [Response Handling](#response-handling)). If your organisation runs a corporate proxy or a network allowlist, make sure `sigma.otpless.app` is reachable directly with its original certificate.
 
 Requires `io.github.otpless-tech:otpless-headless-sdk` >= 2.0.1 on Android and `OtplessBM/Core` >= 3.0.1 on iOS (both pulled in automatically by this package).
+
+### Disabling OTP auto-read (Android, 3.1.0+)
+
+By default the Android SDK registers the SMS / WhatsApp zero-tap OTP auto-read receivers. SNA-only integrations can turn them off for an `initialize` call:
+
+```javascript
+headlessModule.initialize("YOUR_APPID", null, { config: { disableOtpAutoRead: 'true' } });
+```
+
+Auto-read stays on when the key is absent or its value is anything other than exactly `'true'`. Unknown keys and non-string values are dropped. Changing it requires calling `initialize` again. iOS has no OTP auto-read and ignores `config`. Requires `otpless-headless-sdk` 2.3.0+ (this package pulls in 2.4.0).
+
+### SIM binding monitor (Android, 3.1.0+)
+
+Get notified when the SIM binding state changes: `ENABLED` after a binding is saved, `DISABLED` when it is cleared, or when the bound SIM is removed while the monitor is registered.
+
+```javascript
+// after initialize()
+headlessModule.setSimBindingCallback(({ state }) => {
+  console.log('SIM binding:', state); // 'ENABLED' | 'DISABLED'
+});
+await headlessModule.registerSimBindingMonitor(); // resolves true once registered
+
+// later
+headlessModule.unregisterSimBindingMonitor();
+headlessModule.setSimBindingCallback(null); // removes the callback
+```
+
+```ts
+type SimBindingState = 'ENABLED' | 'DISABLED';
+registerSimBindingMonitor(): Promise<boolean>
+unregisterSimBindingMonitor(): void
+setSimBindingCallback(callback: ((event: { state: SimBindingState }) => void) | null): void
+```
+
+- Call `initialize()` before `setSimBindingCallback`, so the event emitter exists. Each call replaces the previous callback.
+- `unregisterSimBindingMonitor()` stops watching for SIM removal but keeps the callback for save / clear events.
+- Same API as `otpless-headless-rn-lite`. On iOS all three are no-ops and `registerSimBindingMonitor()` resolves `false`, because the iOS SDK has no SIM binding monitor.
 
 ### Device integrity
 
